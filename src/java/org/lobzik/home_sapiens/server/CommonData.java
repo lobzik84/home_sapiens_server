@@ -3,16 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.lobzik.home_sapiens.server.entity;
+package org.lobzik.home_sapiens.server;
+
+import java.util.LinkedList;
 
 /**
  *
  * @author lobzik
  */
-public class Terminal {
-    
-    public int id = 0;
-    public int  type = 0;
-    public String description = null;
-    public int status = 0;
+public class CommonData {
+    public static LinkedList<String> authTokenList = new LinkedList();
 }
