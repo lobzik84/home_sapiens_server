@@ -11,22 +11,26 @@ package org.lobzik.home_sapiens.server.entity;
  */
 public class AuthToken {
 
-    private long generationTime = System.currentTimeMillis();
+    private long accessTime = System.currentTimeMillis();
     private String key = null;
     private static final long TTL = 15 * 60 * 1000L;
     private static final String keyAlphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public AuthToken() {
-       generationTime = System.currentTimeMillis();
+       accessTime = System.currentTimeMillis();
        key = generateKey();
     }
     
     public boolean isExpired() {
-        return (generationTime + TTL > System.currentTimeMillis());
+        return (accessTime + TTL > System.currentTimeMillis());
     }
     
     public String getKey() {
         return key;
+    }
+    
+    public void refresh() {
+        accessTime = System.currentTimeMillis();
     }
 
     private static String generateKey() {

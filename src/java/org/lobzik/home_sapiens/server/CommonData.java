@@ -13,5 +13,5 @@ import org.lobzik.home_sapiens.server.entity.AuthToken;
  * @author lobzik
  */
 public class CommonData {
-    public static LinkedList<AuthToken> authTokenList = new LinkedList();
+    public static AuthTokenStorage authTokenStorage = new AuthTokenStorage();
 }

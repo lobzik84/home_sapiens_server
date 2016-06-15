@@ -16,7 +16,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.lobzik.home_sapiens.server.AuthTokenStorage;
 import org.lobzik.home_sapiens.server.CommonData;
+import org.lobzik.home_sapiens.server.entity.AuthToken;
 
 /**
  *
@@ -72,9 +74,20 @@ public class TunnelServlet extends HttpServlet {
             if (requestString.startsWith("{")) {
                 JSONObject json = new JSONObject(requestString);
 
-                if (json.has("device_auth_token") && CommonData.authTokenList.contains(json.getString("device_auth_token"))) {
-                    //authenticated
+                if (json.has("device_auth_token")) {
+                    if (CommonData.authTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
+                        //authenticated 
+                        CommonData.authTokenStorage.getToken(json.getString("device_auth_token")).refresh();
 
+                    }
+                    else  if (json.has("challenge_response")) { 
+                        //authentication response
+                        String challengeResponse = json.getString("challenge_response");
+                        if (challengeResponse.length() == 64) { //TODO check
+                            AuthToken token = new AuthToken();
+                            CommonData.authTokenStorage.add(token);
+                        }
+                    }
                 }
             } else {
                 JSONObject responseJson = new JSONObject();
