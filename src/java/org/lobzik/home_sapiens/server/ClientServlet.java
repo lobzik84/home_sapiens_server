@@ -5,13 +5,17 @@
  */
 package org.lobzik.home_sapiens.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.json.JSONObject;
 
 /**
  *
@@ -19,6 +23,8 @@ import javax.servlet.http.HttpServletResponse;
  */
 @WebServlet(name = "ClientServlet", urlPatterns = {"/hs", "/hs/*"})
 public class ClientServlet extends HttpServlet {
+
+    private static final String challengeAlphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -32,19 +38,63 @@ public class ClientServlet extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
-        
+        HttpSession session = request.getSession();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        InputStream is = request.getInputStream();
+        long readed = 0;
+        long content_length = request.getContentLength();
+        byte[] bytes = new byte[65536];
+        while (readed < content_length) {
+            int r = is.read(bytes);
+            if (r < 0) {
+                break;
+            }
+            baos.write(bytes, 0, r);
+            readed += r;
+        }
+        baos.close();
+        String requestString = baos.toString("UTF-8");
+
+        if (session.getAttribute("user") != null) {
+            //authenticated
+        } else if (requestString.startsWith("{")) {
+            JSONObject json = new JSONObject(requestString);
+            if (json.has("user_id")) { //challenge-RSA
+                JSONObject responseJson = new JSONObject();
+                String challenge = generateChallenge();
+                responseJson.put("challenge", challenge);
+                response.getWriter().write(responseJson.toString());
+            } else if (json.has("login")) { //SRP-6a
+                JSONObject responseJson = new JSONObject();
+                String salt = "";//get salt
+                responseJson.put("salt", salt);
+                response.getWriter().write(responseJson.toString());
+            }
+            //two ways of user authentication: either user uses ID-challenge-RSA
+
+        }
+        else
         try (PrintWriter out = response.getWriter()) {
             /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet MainServlet</title>");            
+            out.println("<title>Home Sapiens</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet MainServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Hello!</h1>");
             out.println("</body>");
             out.println("</html>");
         }
+    }
+
+    private static String generateChallenge() {
+        StringBuffer challenge = new StringBuffer();
+        for (int i = 0; i < 16; i++) {
+            char ch = challengeAlphabet.charAt((int) Math.round(Math.random() * challengeAlphabet.length()));
+            challenge.append(ch);
+        }
+        return challenge.toString();
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

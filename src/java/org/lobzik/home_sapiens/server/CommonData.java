@@ -5,6 +5,7 @@
  */
 package org.lobzik.home_sapiens.server;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import org.lobzik.home_sapiens.server.entity.AuthToken;
 
@@ -13,5 +14,9 @@ import org.lobzik.home_sapiens.server.entity.AuthToken;
  * @author lobzik
  */
 public class CommonData {
-    public static AuthTokenStorage authTokenStorage = new AuthTokenStorage();
+    public static AuthTokenStorage boxAuthTokenStorage = new AuthTokenStorage();
+    public static AuthTokenStorage userAuthTokenStorage = new AuthTokenStorage();
+    
+    public static HashMap <Integer, String> challengeStorage = new HashMap();
+
 }

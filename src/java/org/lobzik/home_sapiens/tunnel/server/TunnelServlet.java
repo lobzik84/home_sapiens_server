@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import org.lobzik.home_sapiens.server.AuthTokenStorage;
 import org.lobzik.home_sapiens.server.CommonData;
 import org.lobzik.home_sapiens.server.entity.AuthToken;
+import org.lobzik.tools.Tools;
 
 /**
  *
@@ -73,31 +74,36 @@ public class TunnelServlet extends HttpServlet {
             System.out.println(requestString);
             if (requestString.startsWith("{")) {
                 JSONObject json = new JSONObject(requestString);
-
+                if (!json.has("box_id")) return;
+                int boxId = json.getInt("box_id");
                 if (json.has("device_auth_token")) {
-                    if (CommonData.authTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
+                    if (CommonData.boxAuthTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
                         //authenticated 
-                        CommonData.authTokenStorage.getToken(json.getString("device_auth_token")).refresh();
+                        CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
 
-                    }
-                    else  if (json.has("challenge_response")) { 
+                    } else if (json.has("challenge_response")) {
                         //authentication response
                         String challengeResponse = json.getString("challenge_response");
                         if (challengeResponse.length() == 64) { //TODO check
                             AuthToken token = new AuthToken();
-                            CommonData.authTokenStorage.add(token);
+                            CommonData.boxAuthTokenStorage.add(token);
                         }
                     }
+                } else  {
+                    
+                    //search DB
+                    JSONObject responseJson = new JSONObject();
+                    String challenge = generateChallenge();
+                    CommonData.challengeStorage.put(boxId, challenge);
+                    responseJson.put("challenge", challenge);
+                    response.getWriter().write(responseJson.toString());
+                    //request auth
+                    //generate challenge, get uid, store it with ttl
+                    //check challenge, generate token with ttl, send token
+                    //store phone_num
                 }
             } else {
-                JSONObject responseJson = new JSONObject();
-                String challenge = generateChallenge();
-                responseJson.put("challenge", challenge);
-                response.getWriter().write(responseJson.toString());
-                //request auth
-                //generate challenge, get uid, store it with ttl
-                //check challenge, generate token with ttl, send token
-                //store phone_num
+                response.getWriter().write("Only JSON accepted");
             }
         } catch (Throwable t) {
             t.printStackTrace();
