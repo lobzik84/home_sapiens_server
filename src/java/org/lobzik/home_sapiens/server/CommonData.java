@@ -14,9 +14,12 @@ import org.lobzik.home_sapiens.server.entity.AuthToken;
  * @author lobzik
  */
 public class CommonData {
+
     public static AuthTokenStorage boxAuthTokenStorage = new AuthTokenStorage();
     public static AuthTokenStorage userAuthTokenStorage = new AuthTokenStorage();
-    
-    public static HashMap <Integer, String> challengeStorage = new HashMap();
+
+    public static HashMap<Integer, String> challengeStorage = new HashMap();
+
+    public static final String dataSourceName = "jdbc/hs";
 
 }
