@@ -120,7 +120,18 @@ public class TunnelServlet extends HttpServlet {
                             return;
                         }
                         boxJson = json.getJSONObject("box_data");
-                        //TODO check if there is id in DB
+                        conn = DBTools.openConnection(CommonData.dataSourceName);
+                        try {
+                            String sSQL = "select id, public_key from boxes where id=" + boxJson.getInt("id");
+                            List<HashMap> resList = DBSelect.getRows(sSQL, conn);
+                            if (resList.size() != 1) {
+                                return;
+                            }
+                        } catch (Exception e) {
+
+                        } finally {
+                            DBTools.closeConnection(conn);
+                        }
 
                         String challenge = generateChallenge();
                         CommonData.challengeStorage.put(boxJson.getInt("id"), challenge);
@@ -140,10 +151,10 @@ public class TunnelServlet extends HttpServlet {
                                 if (resList.size() != 1) {
                                     return;
                                 }
-                                String publicKey = (String)resList.get(0).get("public_key");
+                                String publicKey = (String) resList.get(0).get("public_key");
                                 String calculatedChallengeResponse = challengeResponse; //TODO calculate RSA
 
-                                if (challengeResponse.length() == 64 && calculatedChallengeResponse.equals(challengeResponse)) { 
+                                if (challengeResponse.length() == 64 && calculatedChallengeResponse.equals(challengeResponse)) {
                                     AuthToken token = new AuthToken();
                                     CommonData.boxAuthTokenStorage.add(token);
                                 }
