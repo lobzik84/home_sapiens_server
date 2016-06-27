@@ -8,12 +8,12 @@ public class DBSelect
 {
 
   
-  public static int getCount(String sSQL, String cntField, List argsList, Connection conn) throws Exception
+  public static long getCount(String sSQL, String cntField, List argsList, Connection conn) throws Exception
   {
     List<HashMap> resList = getRows(sSQL, argsList, conn);
     if (resList.size() == 0) return 0;
     if (resList.size() > 1) throw new Exception("Multiple count result");
-    return (Integer) resList.get(0).get(cntField);
+    return (Long) resList.get(0).get(cntField);
   }
   
   public static List<HashMap> getRows(String sSQL, List argsList, Connection conn) throws SQLException

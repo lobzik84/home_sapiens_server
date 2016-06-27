@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.sql.Connection;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -16,6 +17,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.json.JSONObject;
+import org.lobzik.home_sapiens.server.entity.Box;
+import org.lobzik.tools.db.postgresql.DBSelect;
+import org.lobzik.tools.db.postgresql.DBTools;
 
 /**
  *
@@ -72,20 +76,30 @@ public class ClientServlet extends HttpServlet {
             }
             //two ways of user authentication: either user uses ID-challenge-RSA
 
+        } else {
+            Connection conn = null;
+            try {
+                conn = DBTools.openConnection(CommonData.dataSourceName);
+                long boxCnt = DBSelect.getCount("select count(*) as box_cnt from boxes;", "box_cnt", null, conn);
+                PrintWriter out = response.getWriter();
+                out.println("<!DOCTYPE html>");
+                out.println("<html>");
+                out.println("<head>");
+                out.println("<title>Home Sapiens</title>");
+                out.println("</head>");
+                out.println("<body>");
+                out.println("<h1>Hello!</h1>");
+                out.println("<p>" + boxCnt +" devices registered already!</p>");
+                
+                out.println("</body>");
+                out.println("</html>");
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                DBTools.closeConnection(conn);
+            }
         }
-        else
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Home Sapiens</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Hello!</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
+
     }
 
     private static String generateChallenge() {

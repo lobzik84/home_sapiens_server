@@ -6,8 +6,6 @@
 package org.lobzik.home_sapiens.server;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import org.lobzik.home_sapiens.server.entity.AuthToken;
 
 /**
  *
@@ -20,6 +18,6 @@ public class CommonData {
 
     public static HashMap<Integer, String> challengeStorage = new HashMap();
 
-    public static final String dataSourceName = "jdbc/hs";
+    public static final String dataSourceName = "jdbc/home_sapiens_dataPooledDS";
 
 }
