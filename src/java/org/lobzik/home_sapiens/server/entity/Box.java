@@ -16,12 +16,27 @@ import org.lobzik.tools.Tools;
 public class Box {
 
     public Box(JSONObject json) {
-        this.id = Tools.parseInt(json.get("id"), 0);
-        this.ssid = json.getString("ssid");
-        this.publicKey = json.getString("public_key");
-        this.version = json.getString("version");
-        this.status = json.getInt("status");
-        this.phoneNum = json.getString("phone_num");
+        if (json.has("id")) {
+            this.id = json.getInt("id");
+        }
+        if (json.has("ssid")) {
+            this.ssid = json.getString("ssid");
+        }
+        if (json.has("public_key")) {
+            this.publicKey = json.getString("public_key");
+        }
+        if (json.has("version")) {
+            this.version = json.getString("version");
+        }
+        if (json.has("status")) {
+            this.status = json.getInt("status");
+        }
+        if (json.has("phone_num")) {
+            this.phoneNum = json.getString("phone_num");
+        }
+        if (json.has("wpa_psk")) {
+            this.wpaPSK = json.getString("wpa_psk");
+        }
 
     }
 
@@ -32,6 +47,7 @@ public class Box {
         this.version = (String) map.get("version");
         this.status = Tools.parseInt(map.get("status"), 0);
         this.phoneNum = (String) map.get("phone_num");
+        this.wpaPSK = (String) map.get("wpa_psk");
     }
 
     public HashMap<String, Object> getMap() {
@@ -42,7 +58,7 @@ public class Box {
         map.put("version", version);
         map.put("status", status);
         map.put("phone_num", phoneNum);
-
+        map.put("wpa_psk", wpaPSK);
         return map;
     }
 
@@ -61,5 +77,6 @@ public class Box {
     public String version = null;
     public int status = 0;
     public String phoneNum = null;
+    public String wpaPSK = null;
 
 }
