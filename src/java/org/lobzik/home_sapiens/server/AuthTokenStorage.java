@@ -6,7 +6,7 @@
 package org.lobzik.home_sapiens.server;
 
 import java.util.LinkedList;
-import org.lobzik.home_sapiens.server.entity.AuthToken;
+import org.lobzik.home_sapiens.entity.AuthToken;
 
 /**
  *

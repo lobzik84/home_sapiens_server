@@ -19,8 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.server.CommonData;
-import org.lobzik.home_sapiens.server.entity.AuthToken;
-import org.lobzik.home_sapiens.server.entity.Box;
+import org.lobzik.home_sapiens.entity.AuthToken;
+import org.lobzik.home_sapiens.entity.Box;
 import org.lobzik.tools.db.postgresql.DBSelect;
 import org.lobzik.tools.db.postgresql.DBTools;
 
