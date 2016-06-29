@@ -84,11 +84,12 @@ public class TunnelServlet extends HttpServlet {
                 if (!json.has("action")) {
                     return;
                 }
-                JSONObject responseJson = new JSONObject();
+                JSONObject responseJson;
                 String action = json.getString("action");
                 switch (action) {
 
                     case "register_request":
+                        responseJson = new JSONObject();
                         if (!json.has("box_data") || !request.getRemoteAddr().startsWith(DEVELOPMENT_NETWORK)) {
                             return;
                         }
@@ -112,6 +113,7 @@ public class TunnelServlet extends HttpServlet {
                         break;
 
                     case "auth_request":
+                        responseJson = new JSONObject();
                         if (!json.has("box_data")) {
                             return;
                         }
@@ -136,9 +138,10 @@ public class TunnelServlet extends HttpServlet {
                         break;
 
                     case "auth_challenge":
-                        if (json.has("box_data") && json.has("device_auth_token") && json.has("challenge_response")) {
+                        if (json.has("box_data") && json.has("challenge_response")) {
                             boxJson = json.getJSONObject("box_data");
-                            challenge = CommonData.challengeStorage.get(boxJson.getInt("id"));
+                            int boxId = boxJson.getInt("id");
+                            challenge = CommonData.challengeStorage.get(boxId);
                             conn = DBTools.openConnection(CommonData.dataSourceName);
                             try {
                                 String challengeResponse = json.getString("challenge_response");
@@ -151,13 +154,16 @@ public class TunnelServlet extends HttpServlet {
                                 String calculatedChallengeResponse = challengeResponse; //TODO calculate RSA
 
                                 if (challengeResponse.length() == 64 && calculatedChallengeResponse.equals(challengeResponse)) {
-                                    AuthToken token = new AuthToken();
+                                    AuthToken token = new AuthToken(boxId);
                                     CommonData.boxAuthTokenStorage.add(token);
+                                    responseJson = new JSONObject();
+                                    responseJson.put("auth_result", true);
+                                    responseJson.put("device_auth_token", token.getKey());
                                 }
-                                CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
+                                //CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
 
                             } catch (Exception e) {
-
+                                e.printStackTrace();
                             } finally {
                                 DBTools.closeConnection(conn);
                             }
@@ -168,7 +174,7 @@ public class TunnelServlet extends HttpServlet {
                         break;
                     case "user_register":
                         if (json.has("user_data") && json.has("device_auth_token") && CommonData.boxAuthTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
-                            CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
+                            int boxId = CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
                             //TODO
 
                         } else {
@@ -178,7 +184,7 @@ public class TunnelServlet extends HttpServlet {
 
                     case "sensors_update":
                         if (json.has("sensors_data") && json.has("device_auth_token") && CommonData.boxAuthTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
-                            CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
+                            int boxId = CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
                             //TODO
 
                         } else {
