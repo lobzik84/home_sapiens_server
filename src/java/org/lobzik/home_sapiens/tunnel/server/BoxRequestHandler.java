@@ -43,17 +43,24 @@ public class BoxRequestHandler {
     public void boxConnected(Box box, Session session) throws Exception {
         boxes.put(box.id, box);
         BoxLink link = new BoxLink(session);
+        link.status = BoxLink.STATUS.ONLINE;
         link.session = session;
+        
         links.put(box.id, link);
 
     }
 
     public JSONObject handleToBox(int userId, int boxId, JSONObject request) throws Exception {
         BoxLink link = links.get(boxId);
-
-        JSONObject reply = link.ask(request);
-
-        return reply;
+        if (link != null && link.status == BoxLink.STATUS.ONLINE) {
+            JSONObject reply = link.ask(request);
+            return reply;
+        } else {
+            JSONObject reply = new JSONObject();
+            reply.put("result", "error");
+            reply.put("message", "Box id=" + boxId + " not connected to server");
+            return reply;
+        }
 
     }
 

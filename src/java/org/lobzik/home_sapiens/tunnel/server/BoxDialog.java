@@ -46,6 +46,7 @@ public class BoxDialog {
             switch (boxLink.status) {
                 case ONLINE:
                     boxLink.session.getBasicRemote().sendText(requestJson.toString());
+                    System.out.println("sent text: " + requestJson.toString());
                     start = System.currentTimeMillis();
                     try {
                         synchronized (this) {
@@ -55,7 +56,7 @@ public class BoxDialog {
                     }
                     boxLink.busy.set(false);
                     if (System.currentTimeMillis() - start >= BoxLink.RESPONSE_TIMEOUT) {
-                        setError("Timeout waiting for queue");
+                        setError("Timeout waiting for response");
                     }
                     boxLink.resumeNext();
                     break;
