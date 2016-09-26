@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.lobzik.home_sapiens.tunnel.server;
+package org.lobzik.home_sapiens.server.control;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +29,7 @@ import org.lobzik.tools.db.postgresql.DBTools;
  * @author lobzik
  */
 @WebServlet(name = "TunnelServlet", urlPatterns = {"/tun"})
-public class TunnelServlet extends HttpServlet {
+public class ControlServlet extends HttpServlet {
 
     private static final String DEVELOPMENT_NETWORK = "192.168.12";
 
@@ -98,6 +98,7 @@ public class TunnelServlet extends HttpServlet {
 
                         try {
                             Box newBox = new Box(boxJson);
+                            newBox.status = Box.Status.REGISTERED;
                             int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
                             responseJson.put("register_result", "success");
                             responseJson.put("box_id", boxId);
@@ -137,7 +138,7 @@ public class TunnelServlet extends HttpServlet {
                         response.getWriter().write(responseJson.toString());
                         break;
 
-                    case "auth_challenge":
+                   /* case "auth_challenge":
                         if (json.has("box_data") && json.has("challenge_response")) {
                             boxJson = json.getJSONObject("box_data");
                             int boxId = boxJson.getInt("id");
@@ -193,7 +194,7 @@ public class TunnelServlet extends HttpServlet {
                         break;
 
                     default:
-                        break;
+                        break;*/
                 }
 
             } else {
