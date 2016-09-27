@@ -51,10 +51,15 @@ public class BoxLink {
         session.addMessageHandler(new MessageHandler.Whole<String>() {
             @Override
             public void onMessage(String message) {
+                lastDataRevieved = System.currentTimeMillis();
                 try {
+                    if (message.startsWith("{")) {
                     JSONObject json = new JSONObject(message);
 
-                    responseRecieved(json);
+                    responseRecieved(json); 
+                    }
+                    else if (message.equals("tt"))
+                        session.getBasicRemote().sendText("ok");
                     System.out.println("Received message: " + message);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -82,6 +87,13 @@ public class BoxLink {
         if (dialog != null) {
             dialog.gotResponse(response);
         }
+    }
+    
+    public void destroy() {
+        for (MessageHandler mh:session.getMessageHandlers()) {
+            session.removeMessageHandler(mh);
+        }
+        try {session.close();} catch (Exception e) {}
     }
 
 }

@@ -57,5 +57,9 @@ public class UsersSessionsStorage {
         }*/
         return session;
     }
+    
+    public void clear() {
+        storage.clear();
+    }
 
 }

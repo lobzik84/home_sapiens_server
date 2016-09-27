@@ -5,17 +5,11 @@
  */
 package org.lobzik.home_sapiens.tunnel.server;
 
-import java.sql.Connection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Session;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
-import org.lobzik.home_sapiens.server.CommonData;
-import org.lobzik.tools.db.postgresql.DBSelect;
-import org.lobzik.tools.db.postgresql.DBTools;
 
 /**
  *
@@ -32,7 +26,7 @@ public class BoxRequestHandler {
 
     private static final long RECONNECT_TIMEOUT = 2 * 60 * 1000l;
 
-    public static final BoxRequestHandler getInstance() throws Exception {
+    public static final BoxRequestHandler getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new BoxRequestHandler();
         }
@@ -45,7 +39,7 @@ public class BoxRequestHandler {
         BoxLink link = new BoxLink(session);
         link.status = BoxLink.STATUS.ONLINE;
         link.session = session;
-        
+
         links.put(box.id, link);
 
     }
@@ -62,6 +56,23 @@ public class BoxRequestHandler {
             return reply;
         }
 
+    }
+
+    public static void disconnectAll() {
+        try {
+            for (int boxId: links.keySet()) {
+                System.out.println("Disconnecting box id=" +boxId);
+                BoxLink link = links.get(boxId);
+                try {
+                    link.destroy();
+                    link = null;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (Exception ee) {
+            ee.printStackTrace();
+        }
     }
 
 }

@@ -174,6 +174,7 @@ public class ClientServlet extends HttpServlet {
     private void handleToBox(int userId, int boxId, HttpServletRequest request, HttpServletResponse response) throws Exception {
         JSONObject json = (JSONObject) request.getAttribute("json");
         JSONObject boxResponse = BoxRequestHandler.getInstance().handleToBox(userId, boxId, json);
+        boxResponse.put("session_key", json.getString("session_key"));
         response.getWriter().print(boxResponse);
 
     }
@@ -339,6 +340,8 @@ public class ClientServlet extends HttpServlet {
                     PublicKey usersPublicKey = factory.generatePublic(spec);
                     session.put("UsersPublicKey", usersPublicKey);
                     session.put("UserId", userId);
+                    session.put("BoxId", boxId);
+                    
                     json.put("user_id", userId);
                     json.put("box_id", boxId);
                     json.put("result", "success");
