@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import org.json.JSONObject;
+import org.lobzik.home_sapiens.server.control.DBWorker;
 
 /**
  *
@@ -44,23 +45,40 @@ public class BoxLink {
 
     public BoxLink(Session session) {
         this.session = session;
-        for (MessageHandler mh:session.getMessageHandlers()) {
+        for (MessageHandler mh : session.getMessageHandlers()) {
             session.removeMessageHandler(mh);
         }
-        
+
         session.addMessageHandler(new MessageHandler.Whole<String>() {
             @Override
             public void onMessage(String message) {
                 lastDataRevieved = System.currentTimeMillis();
                 try {
                     if (message.startsWith("{")) {
-                    JSONObject json = new JSONObject(message);
+                        JSONObject json = new JSONObject(message);
+                        if (json.has("result")) {
+                            responseRecieved(json);
+                        } else if (json.has("action") && json.getString("action").equals("user_data_upload")) {
+                            System.out.println("Registering user: " + json);
+                            JSONObject response = new JSONObject();
+                            try {
+                                DBWorker.updateUser(json);
+                                response.put("box_session_key", json.get("box_session_key"));
+                                response.put("box_id", json.get("box_id"));
+                                response.put("user_id", json.get("id"));
+                                response.put("result", "user_update_success");
 
-                    responseRecieved(json); 
-                    }
-                    else if (message.equals("tt"))
+                            } catch (Exception e) {
+                                response.put("result", "error");
+                                response.put("message", e.getMessage());
+                            }
+
+                            session.getBasicRemote().sendText(response.toString());
+                        }
+                    } else if (message.equals("tt")) {
                         session.getBasicRemote().sendText("ok");
-                    System.out.println("Received message: " + message);
+                    }
+                    System.out.println("Received message length: " + message.length());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -88,12 +106,15 @@ public class BoxLink {
             dialog.gotResponse(response);
         }
     }
-    
+
     public void destroy() {
-        for (MessageHandler mh:session.getMessageHandlers()) {
+        for (MessageHandler mh : session.getMessageHandlers()) {
             session.removeMessageHandler(mh);
         }
-        try {session.close();} catch (Exception e) {}
+        try {
+            session.close();
+        } catch (Exception e) {
+        }
     }
 
 }

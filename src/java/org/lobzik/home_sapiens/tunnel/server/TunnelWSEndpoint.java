@@ -7,11 +7,15 @@ package org.lobzik.home_sapiens.tunnel.server;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -21,6 +25,8 @@ import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
 import org.lobzik.home_sapiens.entity.UsersSession;
 import org.lobzik.home_sapiens.server.CommonData;
+import org.lobzik.tools.RSATools;
+import org.lobzik.tools.Tools;
 import org.lobzik.tools.db.postgresql.DBSelect;
 import org.lobzik.tools.db.postgresql.DBTools;
 
@@ -28,16 +34,13 @@ import org.lobzik.tools.db.postgresql.DBTools;
  *
  * @author lobzik
  */
-@ServerEndpoint("/wss")
+@ServerEndpoint("/wss/")
 public class TunnelWSEndpoint {
-
-    private Map<String, Object> properties;
 
     @OnOpen
     public void onOpen(Session session, EndpointConfig config) throws IOException {
-        requestLogin(session);
 
-        properties = config.getUserProperties();
+        requestLogin(session);
     }
 
     @OnMessage
@@ -53,17 +56,35 @@ public class TunnelWSEndpoint {
                     String digest = json.getString("digest");
                     Session wsSession = (Session) boxSession.get("ws_session");
                     try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
-                        //TODO box authentication
                         String sSQL = "select * from boxes where id=" + boxId;
                         List<HashMap> boxList = DBSelect.getRows(sSQL, conn);
                         if (boxList.isEmpty()) {
                             throw new Exception("Box not found! id=" + boxId);
                         }
                         Box box = new Box(boxList.get(0));
-                        //TODO verify digest on challenge and box.publicKey;
-                        BoxRequestHandler.getInstance().boxConnected(box, wsSession); //при этом должен переключиться messageHandler - этот больше не вызывается, \
-                        //а вызывается тот, что добавил BoxRequestHandler
-                        System.out.println("Box " + box.id + " connected");
+                        PublicKey publicKey = RSATools.getPublicKey(box.publicKey);
+                        Signature verifier = Signature.getInstance("SHA256withRSA");
+                        verifier.initVerify(publicKey);
+                        verifier.update(challenge.getBytes("UTF-8"));
+                        json = new JSONObject();
+                        json.put("box_session_key", session_key);
+                        boolean valid = verifier.verify(Tools.toByteArray(digest));
+                        if (valid) {
+                            BoxRequestHandler.getInstance().boxConnected(box, wsSession); //messageHandler should be switched now - this one is not called anymore,
+
+                            // now BoxRequestHandler has personal MessageHandler for this box
+                            json.put("result", "success_login");
+                            ServletRequest servletrequest = (ServletRequest)boxSession.get(ServletRequest.class.getName());
+                            System.out.println("Box " + box.id + " connected from " ); //TODO figure out client IP somehow
+                            if (servletrequest != null) System.out.println(servletrequest.getRemoteAddr());
+                        } else {
+
+                            String errMessage = "digest verification error";
+                            json.put("result", "login_error");
+                            json.put("message", errMessage);
+                            System.err.println("Box " + box.id + " " + errMessage);
+                        }
+                        wsSession.getBasicRemote().sendText(json.toString());
                     }
                 }
             }
