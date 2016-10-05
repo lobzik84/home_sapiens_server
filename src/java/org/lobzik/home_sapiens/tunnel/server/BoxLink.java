@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.server.control.DBWorker;
 
@@ -35,6 +36,8 @@ public class BoxLink {
 
     public Session session;
 
+    private Logger log;
+
     public enum STATUS {
         OFFLINE,
         AUTHENTICATING,
@@ -43,8 +46,10 @@ public class BoxLink {
 
     }
 
-    public BoxLink(Session session) {
+    public BoxLink(Session session, Logger log) {
         this.session = session;
+        this.log = log;
+        log.info("Box connected");
         for (MessageHandler mh : session.getMessageHandlers()) {
             session.removeMessageHandler(mh);
         }
@@ -59,7 +64,7 @@ public class BoxLink {
                         if (json.has("result")) {
                             responseRecieved(json);
                         } else if (json.has("action") && json.getString("action").equals("user_data_upload")) {
-                            System.out.println("Registering user: " + json);
+                            log.info("Registering user: " + json.get("id"));
                             JSONObject response = new JSONObject();
                             try {
                                 DBWorker.updateUser(json);
@@ -71,6 +76,7 @@ public class BoxLink {
                             } catch (Exception e) {
                                 response.put("result", "error");
                                 response.put("message", e.getMessage());
+                                log.error(e.getMessage());
                             }
 
                             session.getBasicRemote().sendText(response.toString());
@@ -78,9 +84,10 @@ public class BoxLink {
                     } else if (message.equals("tt")) {
                         session.getBasicRemote().sendText("ok");
                     }
-                    System.out.println("Received message length: " + message.length());
+                    //log.debug("Received message length: " + message.length());
                 } catch (Exception e) {
                     e.printStackTrace();
+                    log.error(e.getMessage());
                 }
             }
         });
@@ -108,8 +115,12 @@ public class BoxLink {
     }
 
     public void destroy() {
+        log.info("Disconnecting box");
         for (MessageHandler mh : session.getMessageHandlers()) {
-            session.removeMessageHandler(mh);
+            try {
+                session.removeMessageHandler(mh);
+            } catch (Exception e) {
+            }
         }
         try {
             session.close();

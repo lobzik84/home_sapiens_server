@@ -8,6 +8,7 @@ package org.lobzik.home_sapiens.tunnel.server;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Session;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
 
@@ -34,14 +35,31 @@ public class BoxRequestHandler {
         return INSTANCE;
     }
 
-    public void boxConnected(Box box, Session session) throws Exception {
+    public void boxConnected(Box box, Session session, Logger log) throws Exception {
+
         boxes.put(box.id, box);
-        BoxLink link = new BoxLink(session);
+        BoxLink link = new BoxLink(session, log);
         link.status = BoxLink.STATUS.ONLINE;
         link.session = session;
 
         links.put(box.id, link);
 
+    }
+
+    public void boxDisconnected(Session session) {
+
+        for (int boxId : links.keySet()) {
+
+            BoxLink link = links.get(boxId);
+            if (link.session.getId().equals(session.getId())) {
+                try {
+                    link.destroy();
+                    link = null;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public JSONObject handleToBox(int userId, int boxId, JSONObject request) throws Exception {
@@ -60,8 +78,7 @@ public class BoxRequestHandler {
 
     public static void disconnectAll() {
         try {
-            for (int boxId: links.keySet()) {
-                System.out.println("Disconnecting box id=" +boxId);
+            for (int boxId : links.keySet()) {
                 BoxLink link = links.get(boxId);
                 try {
                     link.destroy();

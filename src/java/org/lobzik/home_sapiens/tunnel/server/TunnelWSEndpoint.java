@@ -12,19 +12,21 @@ import java.security.Signature;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
+import org.apache.log4j.Appender;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
 import org.lobzik.home_sapiens.entity.UsersSession;
 import org.lobzik.home_sapiens.server.CommonData;
+import org.lobzik.home_sapiens.server.ConnJDBCAppender;
 import org.lobzik.tools.RSATools;
 import org.lobzik.tools.Tools;
 import org.lobzik.tools.db.postgresql.DBSelect;
@@ -50,6 +52,10 @@ public class TunnelWSEndpoint {
                 JSONObject json = new JSONObject(message);
                 if (json.has("box_session_key") && json.has("box_id") && json.has("digest")) {
                     int boxId = json.getInt("box_id");
+                    Logger boxLog = Logger.getLogger("" + boxId);
+                    boxLog.removeAllAppenders();
+                    Appender appender = ConnJDBCAppender.getAppender(DBTools.getDataSource(CommonData.dataSourceName));
+                    boxLog.addAppender(appender);
                     String session_key = json.getString("box_session_key");
                     UsersSession boxSession = CommonData.boxSessions.get(session_key);
                     String challenge = (String) boxSession.get("challenge");
@@ -61,6 +67,7 @@ public class TunnelWSEndpoint {
                         if (boxList.isEmpty()) {
                             throw new Exception("Box not found! id=" + boxId);
                         }
+                        boxLog.info("Authenticating box, challenge = " + challenge);
                         Box box = new Box(boxList.get(0));
                         PublicKey publicKey = RSATools.getPublicKey(box.publicKey);
                         Signature verifier = Signature.getInstance("SHA256withRSA");
@@ -70,19 +77,19 @@ public class TunnelWSEndpoint {
                         json.put("box_session_key", session_key);
                         boolean valid = verifier.verify(Tools.toByteArray(digest));
                         if (valid) {
-                            BoxRequestHandler.getInstance().boxConnected(box, wsSession); //messageHandler should be switched now - this one is not called anymore,
+                            boxLog.info("Authenticated");
+                            BoxRequestHandler.getInstance().boxConnected(box, wsSession, boxLog); //messageHandler should be switched now - this one is not called anymore,
 
                             // now BoxRequestHandler has personal MessageHandler for this box
                             json.put("result", "success_login");
-                            ServletRequest servletrequest = (ServletRequest)boxSession.get(ServletRequest.class.getName());
-                            System.out.println("Box " + box.id + " connected from " ); //TODO figure out client IP somehow
-                            if (servletrequest != null) System.out.println(servletrequest.getRemoteAddr());
+
                         } else {
 
                             String errMessage = "digest verification error";
                             json.put("result", "login_error");
                             json.put("message", errMessage);
-                            System.err.println("Box " + box.id + " " + errMessage);
+                            boxLog.error(errMessage);
+                            //System.err.println("Box " + box.id + " " + errMessage);
                         }
                         wsSession.getBasicRemote().sendText(json.toString());
                     }
@@ -92,6 +99,11 @@ public class TunnelWSEndpoint {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @OnClose
+    public void onClose(Session session) throws IOException {
+        BoxRequestHandler.getInstance().boxDisconnected(session);
     }
 
     private void requestLogin(Session session) throws IOException {
