@@ -36,13 +36,16 @@ import org.lobzik.tools.db.postgresql.DBTools;
  *
  * @author lobzik
  */
-@ServerEndpoint("/wss/")
+@ServerEndpoint(value = "/wss/", configurator = ServletAwareConfig.class)
 public class TunnelWSEndpoint {
 
     @OnOpen
     public void onOpen(Session session, EndpointConfig config) throws IOException {
-
-        requestLogin(session);
+        String remoteAddr = null;
+        if (config.getUserProperties() != null) {
+            remoteAddr = (String) config.getUserProperties().get("RemoteAddr");
+        }
+        requestLogin(session, remoteAddr);
     }
 
     @OnMessage
@@ -78,7 +81,7 @@ public class TunnelWSEndpoint {
                         boolean valid = verifier.verify(Tools.toByteArray(digest));
                         if (valid) {
                             boxLog.info("Authenticated");
-                            BoxRequestHandler.getInstance().boxConnected(box, wsSession, boxLog); //messageHandler should be switched now - this one is not called anymore,
+                            BoxRequestHandler.getInstance().boxConnected(box, wsSession, boxLog, boxSession); //messageHandler should be switched now - this one is not called anymore,
 
                             // now BoxRequestHandler has personal MessageHandler for this box
                             json.put("result", "success_login");
@@ -106,11 +109,12 @@ public class TunnelWSEndpoint {
         BoxRequestHandler.getInstance().boxDisconnected(session);
     }
 
-    private void requestLogin(Session session) throws IOException {
+    private void requestLogin(Session session, String remoteAddr) throws IOException {
         JSONObject json = new JSONObject();
         String session_key = CommonData.boxSessions.createSession();
         UsersSession boxSession = CommonData.boxSessions.get(session_key);
         String challenge = new BigInteger(32, new Random()).toString(16);
+        boxSession.put("remote_addr", remoteAddr);
         boxSession.put("challenge", challenge);
         boxSession.put("ws_session", session);
         json.put("result", "do_login");

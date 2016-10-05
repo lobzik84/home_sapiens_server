@@ -37,6 +37,8 @@ public class BoxLink {
     public Session session;
 
     private Logger log;
+    
+    public String remoteAddr;
 
     public enum STATUS {
         OFFLINE,
@@ -46,10 +48,11 @@ public class BoxLink {
 
     }
 
-    public BoxLink(Session session, Logger log) {
+    public BoxLink(Session session, Logger log, String remoteAddr) {
         this.session = session;
         this.log = log;
-        log.info("Box connected");
+        this.remoteAddr = remoteAddr;
+        log.info("Box connected from " + remoteAddr);
         for (MessageHandler mh : session.getMessageHandlers()) {
             session.removeMessageHandler(mh);
         }
@@ -91,6 +94,7 @@ public class BoxLink {
                 }
             }
         });
+        status = STATUS.ONLINE;
     }
 
     public void resumeNext() {
@@ -126,6 +130,7 @@ public class BoxLink {
             session.close();
         } catch (Exception e) {
         }
+        status = STATUS.OFFLINE;
     }
 
 }

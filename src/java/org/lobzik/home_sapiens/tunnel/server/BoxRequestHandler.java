@@ -11,6 +11,7 @@ import javax.websocket.Session;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
+import org.lobzik.home_sapiens.entity.UsersSession;
 
 /**
  *
@@ -35,10 +36,11 @@ public class BoxRequestHandler {
         return INSTANCE;
     }
 
-    public void boxConnected(Box box, Session session, Logger log) throws Exception {
+    public void boxConnected(Box box, Session session, Logger log, UsersSession boxSession) throws Exception {
 
         boxes.put(box.id, box);
-        BoxLink link = new BoxLink(session, log);
+        String remoteAddr = (String) boxSession.get("remote_addr");
+        BoxLink link = new BoxLink(session, log, remoteAddr);
         link.status = BoxLink.STATUS.ONLINE;
         link.session = session;
 
