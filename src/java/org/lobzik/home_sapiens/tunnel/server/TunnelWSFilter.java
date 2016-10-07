@@ -17,6 +17,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
+import org.lobzik.home_sapiens.server.ServerTools;
 
 /**
  *
@@ -43,7 +44,8 @@ public class TunnelWSFilter implements Filter {
         
         System.out.println("Connection from " +request.getRemoteAddr());
         HttpServletRequest req = (HttpServletRequest)request;
-        req.getSession().setAttribute("RemoteAddr", request.getRemoteAddr());
+        String remoteAddr = ServerTools.getProxyIP(req);
+        req.getSession().setAttribute("RemoteAddr", remoteAddr);
 
         
         Throwable problem = null;

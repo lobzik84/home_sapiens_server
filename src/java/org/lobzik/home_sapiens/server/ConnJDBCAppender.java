@@ -20,7 +20,6 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.jdbc.JDBCAppender;
 import org.lobzik.tools.db.postgresql.DBTools;
 
-
 public class ConnJDBCAppender extends JDBCAppender {
 
     private static DataSource ds = null;
@@ -50,6 +49,16 @@ public class ConnJDBCAppender extends JDBCAppender {
         ConnJDBCAppender jdbcAppender = new ConnJDBCAppender(dsc);
         jdbcAppender.setLayout(new PatternLayout());
         jdbcAppender.setSql("insert into box_logs values ((select nextval('box_logs_seq')), %c,'%d{yyyy-MM-dd HH:mm:ss.SSS}','%p','%m'); \n");
+        AsyncAppender asyncAppender = new AsyncAppender();
+        asyncAppender.setBufferSize(1000);
+        asyncAppender.addAppender(jdbcAppender);
+        return asyncAppender;
+    }
+
+    public static Appender getServerAppender(DataSource dsc) {
+        ConnJDBCAppender jdbcAppender = new ConnJDBCAppender(dsc);
+        jdbcAppender.setLayout(new PatternLayout());
+        jdbcAppender.setSql("insert into server_log values ((select nextval('server_log_seq')), '%c','%d{yyyy-MM-dd HH:mm:ss.SSS}','%p','%m'); \n");
         AsyncAppender asyncAppender = new AsyncAppender();
         asyncAppender.setBufferSize(1000);
         asyncAppender.addAppender(jdbcAppender);

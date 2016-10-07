@@ -78,6 +78,25 @@ public class BoxRequestHandler {
 
     }
 
+    public static String getRemoteIP(int boxId) {
+        BoxLink link = links.get(boxId);
+        if (link != null && link.status == BoxLink.STATUS.ONLINE) {
+            return link.remoteAddr;
+        } else {
+            return "";
+        }
+    }
+
+    public static int getOnlineCount() {
+        int cnt = 0;
+        for (BoxLink link : links.values()) {
+            if (link != null && link.status == BoxLink.STATUS.ONLINE) {
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
     public static void disconnectAll() {
         try {
             for (int boxId : links.keySet()) {

@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -18,9 +19,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
-import org.lobzik.home_sapiens.server.CommonData;
-import org.lobzik.home_sapiens.entity.AuthToken;
 import org.lobzik.home_sapiens.entity.Box;
+import org.lobzik.home_sapiens.server.CommonData;
+import org.lobzik.home_sapiens.server.ConnJDBCAppender;
+import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
+import org.lobzik.tools.Tools;
 import org.lobzik.tools.db.postgresql.DBSelect;
 import org.lobzik.tools.db.postgresql.DBTools;
 
@@ -28,15 +31,19 @@ import org.lobzik.tools.db.postgresql.DBTools;
  *
  * @author lobzik
  */
-@WebServlet(name = "TunnelServlet", urlPatterns = {"/tun"})
+@WebServlet(name = "ControlServlet", urlPatterns = {"/control", "/control/*"})
 public class ControlServlet extends HttpServlet {
 
-    private static final String DEVELOPMENT_NETWORK = "192.168.12";
-
-    private static final String challengeAlphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    private final Logger log = Logger.getLogger(this.getClass());
-
+    private static final String DEVELOPMENT_NETWORK = "192.168.11";
+    private static final String SERVLET_NAME = "Control servlet";
+    private static final Logger log = Logger.getLogger(SERVLET_NAME);
+    static {
+        try {
+            log.addAppender(ConnJDBCAppender.getServerAppender(DBTools.getDataSource(CommonData.dataSourceName)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * Returns a short description of the servlet.
      *
@@ -44,7 +51,7 @@ public class ControlServlet extends HttpServlet {
      */
     @Override
     public String getServletInfo() {
-        return "tunnel servlet";
+        return SERVLET_NAME;
     }
 
     /**
@@ -58,150 +65,164 @@ public class ControlServlet extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        try {
-            response.setCharacterEncoding("UTF-8");
-            response.setContentType("application/json");
-            //request.getReader();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InputStream is = request.getInputStream();
-            long readed = 0;
-            long content_length = request.getContentLength();
-            byte[] bytes = new byte[65536];
-            while (readed < content_length) {
-                int r = is.read(bytes);
-                if (r < 0) {
-                    break;
-                }
-                baos.write(bytes, 0, r);
-                readed += r;
-            }
-            baos.close();
-            String requestString = baos.toString("UTF-8");
-
-            System.out.println(requestString);
-            if (requestString.startsWith("{")) {
-                JSONObject json = new JSONObject(requestString);
-                if (!json.has("action")) {
-                    return;
-                }
-                JSONObject responseJson;
-                String action = json.getString("action");
-                switch (action) {
-
-                    case "register_request":
-                        responseJson = new JSONObject();
-                        if (!json.has("box_data") || !request.getRemoteAddr().startsWith(DEVELOPMENT_NETWORK)) {
-                            return;
-                        }
-                        JSONObject boxJson = json.getJSONObject("box_data");
-                        Connection conn = DBTools.openConnection(CommonData.dataSourceName);
-
-                        try {
-                            Box newBox = new Box(boxJson);
-                            newBox.status = Box.Status.REGISTERED;
-                            int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
-                            responseJson.put("register_result", "success");
-                            responseJson.put("box_id", boxId);
-                            log.info("Registered new Box: ");
-
-                        } catch (Exception e) {
-                            log.error("Error while registering box: " + e.getMessage());
-                            responseJson.put("register_result", "error");
-                        } finally {
-                            DBTools.closeConnection(conn);
-                        }
-                        response.getWriter().write(responseJson.toString());
-                        break;
-
-                    case "auth_request":
-                        responseJson = new JSONObject();
-                        if (!json.has("box_data")) {
-                            return;
-                        }
-                        boxJson = json.getJSONObject("box_data");
-                        conn = DBTools.openConnection(CommonData.dataSourceName);
-                        try {
-                            String sSQL = "select id, public_key from boxes where id=" + boxJson.getInt("id");
-                            List<HashMap> resList = DBSelect.getRows(sSQL, conn);
-                            if (resList.size() != 1) {
-                                return;
+        if (!request.getRemoteAddr().startsWith(DEVELOPMENT_NETWORK) && !request.getRemoteAddr().equals("127.0.0.1")) {
+            response.getWriter().println(request.getRemoteAddr() + " not allowed");
+            return;
+        }
+        String path = request.getPathInfo();
+        if (path != null) {
+            String[] pathEl = path.split("/");
+            if (pathEl.length > 0) {
+                switch (pathEl[1]) {
+                    case "boxes":
+                        String sSQL = "select * from boxes";
+                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                            List<HashMap> boxes = DBSelect.getRows(sSQL, conn);
+                            for (HashMap box:boxes){
+                                box.put("IP", BoxRequestHandler.getRemoteIP(Tools.parseInt(box.get("id"), 0)));
                             }
+                            HashMap<String, Object> jspData = new HashMap();
+                            jspData.put("boxes", boxes);
+                            RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/boxes.jsp");
+                            request.setAttribute("JspData", jspData);
+                            disp.include(request, response);
                         } catch (Exception e) {
-
-                        } finally {
-                            DBTools.closeConnection(conn);
+                            log.error(e.toString());
                         }
 
-                        String challenge = generateChallenge();
-                        CommonData.challengeStorage.put(boxJson.getInt("id"), challenge);
-                        responseJson.put("challenge", challenge);
-                        response.getWriter().write(responseJson.toString());
                         break;
 
-                   /* case "auth_challenge":
-                        if (json.has("box_data") && json.has("challenge_response")) {
-                            boxJson = json.getJSONObject("box_data");
-                            int boxId = boxJson.getInt("id");
-                            challenge = CommonData.challengeStorage.get(boxId);
-                            conn = DBTools.openConnection(CommonData.dataSourceName);
-                            try {
-                                String challengeResponse = json.getString("challenge_response");
-                                String sSQL = "select id, public_key from boxes where id=" + boxJson.getInt("id");
-                                List<HashMap> resList = DBSelect.getRows(sSQL, conn);
-                                if (resList.size() != 1) {
+                    case "box_logs":
+                        sSQL = "select * from box_logs where 1=1 ";
+                        if (pathEl.length > 2 && Tools.parseInt(pathEl[2], 0) > 0) {
+                            sSQL += " and box_id=" + pathEl[2];
+                        }
+                        sSQL += " order by dated ";
+                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                            List<HashMap> logs = DBSelect.getRows(sSQL, conn);
+                            HashMap<String, Object> jspData = new HashMap();
+                            jspData.put("logs", logs);
+                            RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/box_logs.jsp");
+                            request.setAttribute("JspData", jspData);
+                            disp.include(request, response);
+                        } catch (Exception e) {
+                            log.error(e.toString());
+                        }
+                        break;
+                        
+                    case "log":
+                        sSQL = "select * from server_log where 1=1 ";
+                        sSQL += " order by dated ";
+                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                            List<HashMap> logs = DBSelect.getRows(sSQL, conn);
+                            HashMap<String, Object> jspData = new HashMap();
+                            jspData.put("logs", logs);
+                            RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/server_log.jsp");
+                            request.setAttribute("JspData", jspData);
+                            disp.include(request, response);
+                        } catch (Exception e) {
+                            log.error(e.toString());
+                        }
+                        break;
+
+                    case "users":
+                        sSQL = "select * from users where 1=1 ";
+                        if (pathEl.length > 2 && Tools.parseInt(pathEl[2], 0) > 0) {
+                            sSQL += " and box_id=" + pathEl[2];
+                        }
+                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                            List<HashMap> users = DBSelect.getRows(sSQL, conn);
+                            HashMap<String, Object> jspData = new HashMap();
+                            jspData.put("users", users);
+                            RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/users.jsp");
+                            request.setAttribute("JspData", jspData);
+                            disp.include(request, response);
+                        } catch (Exception e) {
+                            log.error(e.toString());
+                        }
+                        break;
+
+                    case "register":
+                        try {
+                            response.setCharacterEncoding("UTF-8");
+                            response.setContentType("application/json");
+                            //request.getReader();
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            InputStream is = request.getInputStream();
+                            long readed = 0;
+                            long content_length = request.getContentLength();
+                            byte[] bytes = new byte[65536];
+                            while (readed < content_length) {
+                                int r = is.read(bytes);
+                                if (r < 0) {
+                                    break;
+                                }
+                                baos.write(bytes, 0, r);
+                                readed += r;
+                            }
+                            baos.close();
+                            String requestString = baos.toString("UTF-8");
+
+                            System.out.println(requestString);
+                            if (requestString.startsWith("{")) {
+                                JSONObject json = new JSONObject(requestString);
+                                if (!json.has("action")) {
                                     return;
                                 }
-                                String publicKey = (String) resList.get(0).get("public_key");
-                                String calculatedChallengeResponse = challengeResponse; //TODO calculate RSA
+                                JSONObject responseJson;
+                                String action = json.getString("action");
+                                switch (action) {
 
-                                if (challengeResponse.length() == 64 && calculatedChallengeResponse.equals(challengeResponse)) {
-                                    AuthToken token = new AuthToken(boxId);
-                                    CommonData.boxAuthTokenStorage.add(token);
-                                    responseJson = new JSONObject();
-                                    responseJson.put("auth_result", true);
-                                    responseJson.put("device_auth_token", token.getKey());
+                                    case "register_request":
+                                        responseJson = new JSONObject();
+                                        if (!json.has("box_data") ) {
+                                            return;
+                                        }
+                                        JSONObject boxJson = json.getJSONObject("box_data");
+
+                                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                                            Box newBox = new Box(boxJson);
+                                            newBox.status = Box.Status.REGISTERED;
+                                            int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
+                                            responseJson.put("register_result", "success");
+                                            responseJson.put("box_id", boxId);
+                                            log.info("Registered new Box: " + boxId);
+
+                                        } catch (Exception e) {
+                                            log.error("Error while registering box: " + e.getMessage());
+                                            responseJson.put("register_result", "error");
+                                        }
+                                        response.getWriter().write(responseJson.toString());
+                                        return;
+                                        
                                 }
-                                //CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
 
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            } finally {
-                                DBTools.closeConnection(conn);
+                            } else {
+                                response.getWriter().write("Only JSON accepted");
                             }
-
-                        } else {
-                            return;
-                        }
-                        break;
-                    case "user_register":
-                        if (json.has("user_data") && json.has("device_auth_token") && CommonData.boxAuthTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
-                            int boxId = CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
-                            //TODO
-
-                        } else {
-                            return;
+                        } catch (Throwable t) {
+                            log.error(t.getMessage());
                         }
                         break;
 
-                    case "sensors_update":
-                        if (json.has("sensors_data") && json.has("device_auth_token") && CommonData.boxAuthTokenStorage.hasValidToken(json.getString("device_auth_token"))) {
-                            int boxId = CommonData.boxAuthTokenStorage.getToken(json.getString("device_auth_token")).refresh();
-                            //TODO
-
-                        } else {
-                            return;
-                        }
-                        break;
-
-                    default:
-                        break;*/
                 }
 
             } else {
-                response.getWriter().write("Only JSON accepted");
+                try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+
+                    HashMap<String, Object> jspData = new HashMap();
+                    jspData.put("online_cnt", BoxRequestHandler.getOnlineCount());
+                    String sSQL =   "select * from (select 1 as a, count(*) boxes_cnt from boxes) b\n" +
+                                    "inner join (select 1 as a, count(*) users_cnt from users) u on u.a = b.a";
+                    List<HashMap> resList = DBSelect.getRows(sSQL, conn);
+                    jspData.putAll(resList.get(0));
+                    RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/status.jsp");
+                    request.setAttribute("JspData", jspData);
+                    disp.include(request, response);
+                } catch (Exception e) {
+                    log.error(e.toString());
+                }
             }
-        } catch (Throwable t) {
-            log.error(t.getMessage());
         }
     }
 
@@ -234,12 +255,4 @@ public class ControlServlet extends HttpServlet {
         processRequest(request, response);
     }
 
-    private static String generateChallenge() {
-        StringBuffer challenge = new StringBuffer();
-        for (int i = 0; i < 16; i++) {
-            char ch = challengeAlphabet.charAt((int) Math.round(Math.random() * challengeAlphabet.length()));
-            challenge.append(ch);
-        }
-        return challenge.toString();
-    }
 }
