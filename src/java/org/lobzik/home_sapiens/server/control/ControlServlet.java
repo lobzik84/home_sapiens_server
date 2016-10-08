@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
 import org.lobzik.home_sapiens.server.CommonData;
 import org.lobzik.home_sapiens.server.ConnJDBCAppender;
+import org.lobzik.home_sapiens.server.ServerTools;
 import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
 import org.lobzik.tools.Tools;
 import org.lobzik.tools.db.postgresql.DBSelect;
@@ -37,6 +38,7 @@ public class ControlServlet extends HttpServlet {
     private static final String DEVELOPMENT_NETWORK = "192.168.11";
     private static final String SERVLET_NAME = "Control servlet";
     private static final Logger log = Logger.getLogger(SERVLET_NAME);
+
     static {
         try {
             log.addAppender(ConnJDBCAppender.getServerAppender(DBTools.getDataSource(CommonData.dataSourceName)));
@@ -44,6 +46,7 @@ public class ControlServlet extends HttpServlet {
             e.printStackTrace();
         }
     }
+
     /**
      * Returns a short description of the servlet.
      *
@@ -65,8 +68,9 @@ public class ControlServlet extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (!request.getRemoteAddr().startsWith(DEVELOPMENT_NETWORK) && !request.getRemoteAddr().equals("127.0.0.1")) {
-            response.getWriter().println(request.getRemoteAddr() + " not allowed");
+        String remoteAddr = ServerTools.getProxyIP(request);
+        if (!remoteAddr.startsWith(DEVELOPMENT_NETWORK) && !remoteAddr.equals("127.0.0.1")) {
+            response.getWriter().println(remoteAddr + " not allowed");
             return;
         }
         String path = request.getPathInfo();
@@ -78,7 +82,7 @@ public class ControlServlet extends HttpServlet {
                         String sSQL = "select * from boxes";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> boxes = DBSelect.getRows(sSQL, conn);
-                            for (HashMap box:boxes){
+                            for (HashMap box : boxes) {
                                 box.put("IP", BoxRequestHandler.getRemoteIP(Tools.parseInt(box.get("id"), 0)));
                             }
                             HashMap<String, Object> jspData = new HashMap();
@@ -109,7 +113,7 @@ public class ControlServlet extends HttpServlet {
                             log.error(e.toString());
                         }
                         break;
-                        
+
                     case "log":
                         sSQL = "select * from server_log where 1=1 ";
                         sSQL += " order by dated ";
@@ -171,30 +175,29 @@ public class ControlServlet extends HttpServlet {
                                 }
                                 JSONObject responseJson;
                                 String action = json.getString("action");
-                                switch (action) {
+                                if (action.equals("register_request")) {
 
-                                    case "register_request":
-                                        responseJson = new JSONObject();
-                                        if (!json.has("box_data") ) {
-                                            return;
-                                        }
-                                        JSONObject boxJson = json.getJSONObject("box_data");
-
-                                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
-                                            Box newBox = new Box(boxJson);
-                                            newBox.status = Box.Status.REGISTERED;
-                                            int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
-                                            responseJson.put("register_result", "success");
-                                            responseJson.put("box_id", boxId);
-                                            log.info("Registered new Box: " + boxId);
-
-                                        } catch (Exception e) {
-                                            log.error("Error while registering box: " + e.getMessage());
-                                            responseJson.put("register_result", "error");
-                                        }
-                                        response.getWriter().write(responseJson.toString());
+                                    responseJson = new JSONObject();
+                                    if (!json.has("box_data")) {
                                         return;
-                                        
+                                    }
+                                    JSONObject boxJson = json.getJSONObject("box_data");
+
+                                    try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                                        Box newBox = new Box(boxJson);
+                                        newBox.status = Box.Status.REGISTERED;
+                                        int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
+                                        responseJson.put("register_result", "success");
+                                        responseJson.put("box_id", boxId);
+                                        log.info("Registered new Box id=" + boxId + " from " + remoteAddr);
+
+                                    } catch (Exception e) {
+                                        log.error("Error while registering box: " + e.getMessage());
+                                        responseJson.put("register_result", "error");
+                                    }
+                                    response.getWriter().write(responseJson.toString());
+                                    return;
+
                                 }
 
                             } else {
@@ -212,8 +215,8 @@ public class ControlServlet extends HttpServlet {
 
                     HashMap<String, Object> jspData = new HashMap();
                     jspData.put("online_cnt", BoxRequestHandler.getOnlineCount());
-                    String sSQL =   "select * from (select 1 as a, count(*) boxes_cnt from boxes) b\n" +
-                                    "inner join (select 1 as a, count(*) users_cnt from users) u on u.a = b.a";
+                    String sSQL = "select * from (select 1 as a, count(*) boxes_cnt from boxes) b\n"
+                            + "inner join (select 1 as a, count(*) users_cnt from users) u on u.a = b.a";
                     List<HashMap> resList = DBSelect.getRows(sSQL, conn);
                     jspData.putAll(resList.get(0));
                     RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/status.jsp");

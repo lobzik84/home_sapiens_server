@@ -46,7 +46,7 @@ public class BoxDialog {
             switch (boxLink.status) {
                 case ONLINE:
                     boxLink.session.getBasicRemote().sendText(requestJson.toString());
-                    System.out.println("sent text: " + requestJson.toString());
+                   // System.out.println("sent text: " + requestJson.toString());
                     start = System.currentTimeMillis();
                     try {
                         synchronized (this) {

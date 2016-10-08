@@ -24,6 +24,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.UsersSession;
 import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
@@ -43,6 +44,16 @@ public class ClientServlet extends HttpServlet {
     private static final BigInteger K = new BigInteger("c46d46600d87fef149bd79b81119842f3c20241fda67d06ef412d8f6d9479c58", 16);
     private static final String SALT_ALPHABET = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final String FAKE_SALT_KEY = "mri9gjn0990)M09V^&DF&*GR^%^WTioh89t;";
+    private static final String SERVLET_NAME = "Client servlet";
+    private static final Logger log = Logger.getLogger(SERVLET_NAME);
+
+    static {
+        try {
+            log.addAppender(ConnJDBCAppender.getServerAppender(DBTools.getDataSource(CommonData.dataSourceName)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -127,6 +138,7 @@ public class ClientServlet extends HttpServlet {
             }
         } catch (Throwable e) {
             e.printStackTrace();
+            log.error(e);
             response.getWriter().print("{\"result\":\"error\",\"message\":\"" + e.getMessage() + "\"}");
         }
 
@@ -168,7 +180,7 @@ public class ClientServlet extends HttpServlet {
      */
     @Override
     public String getServletInfo() {
-        return "Short description";
+        return SERVLET_NAME;
     }// </editor-fold>
 
     private void handleToBox(int userId, int boxId, HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -228,9 +240,9 @@ public class ClientServlet extends HttpServlet {
                 json.put("user_id", userId);
                 json.put("box_id", userId);
                 json.put("result", "success");
-                System.out.println("RSA LOGIN OK! UserId=" + userId);
+                log.info("RSA LOGIN OK! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
             } else {
-                System.out.println("RSA Login error");
+                log.error("RSA Login error! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
                 json.put("result", "error");
                 json.put("message", "Login using RSA digest failed");
             }
@@ -341,16 +353,16 @@ public class ClientServlet extends HttpServlet {
                     session.put("UsersPublicKey", usersPublicKey);
                     session.put("UserId", userId);
                     session.put("BoxId", boxId);
-                    
+
                     json.put("user_id", userId);
                     json.put("box_id", boxId);
                     json.put("result", "success");
                     json.put("srp_M", M.toString(16));
-                    System.out.println("SRP LOGIN OK! UserId=" + userId);
+                    log.info("SRP LOGIN OK! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
                 }
             }
         } else {
-            System.out.println("SRP Login error");
+            log.error("SRP Login error for user " + username + ", IP " + ServerTools.getProxyIP(request));
             json.put("result", "error");
             json.put("message", "Invalid login or password");
         }
