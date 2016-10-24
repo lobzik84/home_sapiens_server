@@ -37,7 +37,7 @@ public class BoxLink {
     public Session session;
 
     private Logger log;
-    
+
     public String remoteAddr;
 
     public enum STATUS {
@@ -61,6 +61,7 @@ public class BoxLink {
             @Override
             public void onMessage(String message) {
                 lastDataRevieved = System.currentTimeMillis();
+
                 try {
                     if (message.startsWith("{")) {
                         JSONObject json = new JSONObject(message);
@@ -100,6 +101,7 @@ public class BoxLink {
     public void resumeNext() {
         BoxDialog dialog = queue.peek();
         if (dialog != null) {
+           // System.out.println("resuming id=" + dialog.id + " size=" + queue.size());
             dialog.resume();
         }
     }
@@ -108,7 +110,9 @@ public class BoxLink {
         BoxDialog dialog = new BoxDialog(request);
         queue.add(dialog);
         dialog.doDialog(this);
-        return queue.poll().responseJson;
+        dialog = queue.poll();
+        resumeNext();
+        return dialog.responseJson;
     }
 
     public void responseRecieved(JSONObject response) throws Exception {

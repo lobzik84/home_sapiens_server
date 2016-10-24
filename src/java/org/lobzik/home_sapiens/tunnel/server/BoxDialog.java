@@ -32,7 +32,9 @@ public class BoxDialog {
             //boxLink.queue.add(this);
             try {
                 synchronized (this) {
+                    //System.out.println("queueing request! id=" + id);
                     wait(BoxLink.QUEUE_TIMEOUT); //for queue
+                    //System.out.println("resumed");
                 }
             } catch (InterruptedException ioe) {
             }
@@ -46,7 +48,9 @@ public class BoxDialog {
             switch (boxLink.status) {
                 case ONLINE:
                     boxLink.session.getBasicRemote().sendText(requestJson.toString());
-                   // System.out.println("sent text: " + requestJson.toString());
+                    //System.out.println(" request id=" + id);
+
+                    // System.out.println("sent text: " + requestJson.toString());
                     start = System.currentTimeMillis();
                     try {
                         synchronized (this) {
@@ -55,10 +59,11 @@ public class BoxDialog {
                     } catch (InterruptedException ioe) {
                     }
                     boxLink.busy.set(false);
+
                     if (System.currentTimeMillis() - start >= BoxLink.RESPONSE_TIMEOUT) {
                         setError("Timeout waiting for response");
                     }
-                    boxLink.resumeNext();
+
                     break;
 
                 default:
@@ -74,6 +79,7 @@ public class BoxDialog {
     }
 
     public void resume() {
+
         try {
             synchronized (this) {
                 notify();
@@ -81,10 +87,12 @@ public class BoxDialog {
         } catch (Exception e) {
         }
     }
-    
+
     public void gotResponse(JSONObject response) {
         this.responseJson = response;
+       // System.out.println("got response id=" + id);
         resume();
+
     }
 
     private void setError(String message) {
