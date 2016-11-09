@@ -68,9 +68,13 @@ public class BoxRequestHandler {
         BoxLink link = links.get(boxId);
         if (link != null && link.status == BoxLink.STATUS.ONLINE) {
             JSONObject reply = link.ask(request);
+            reply.put("connection_type", "remote");
+            reply.put("box_link", "up");
             return reply;
         } else {
             JSONObject reply = new JSONObject();
+            reply.put("connection_type", "remote");
+            reply.put("box_link", "down");                    
             reply.put("result", "error");
             reply.put("message", "Box id=" + boxId + " not connected to server");
             return reply;
