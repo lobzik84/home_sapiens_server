@@ -12,6 +12,7 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.lobzik.home_sapiens.server.CommonData;
 import org.lobzik.home_sapiens.server.control.DBWorker;
 
 /**
@@ -84,6 +85,22 @@ public class BoxLink {
                             }
 
                             session.getBasicRemote().sendText(response.toString());
+                        } else if (json.has("action") && json.getString("action").equals("send_email")) {
+                            if (json.has("mail_to") && json.has("mail_text") && json.has("mail_subject")) {
+                                JSONObject response = new JSONObject();
+                                try {
+                                    String mailTo = json.getString("mail_to");
+                                    String mailText = json.getString("mail_text");
+                                    String mailSubject = json.getString("mail_subject");
+                                    CommonData.mailer.send(mailSubject, mailText, mailTo, true, true);
+                                    response.put("result", "mail_sent_success");
+                                } catch (Exception e) {
+                                    response.put("result", "error");
+                                    response.put("message", e.getMessage());
+                                    log.error(e.getMessage());
+                                }
+                                session.getBasicRemote().sendText(response.toString());
+                            }
                         }
                     } else if (message.equals("tt")) {
                         session.getBasicRemote().sendText("ok");
@@ -101,7 +118,7 @@ public class BoxLink {
     public void resumeNext() {
         BoxDialog dialog = queue.peek();
         if (dialog != null) {
-           // System.out.println("resuming id=" + dialog.id + " size=" + queue.size());
+            // System.out.println("resuming id=" + dialog.id + " size=" + queue.size());
             dialog.resume();
         }
     }

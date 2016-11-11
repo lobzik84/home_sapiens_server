@@ -336,7 +336,7 @@ public class ClientServlet extends HttpServlet {
         json = new JSONObject();
         if (M_client.equals(Mstr)) {
 
-            String sSQL = "select user_id, box_id, salt, verifier, public_key from users where status = 1 and login=?;";
+            String sSQL = "select user_id, box_id, salt, verifier, public_key from users where status = 1 and login=? order by sync_time desc;";//на случай, если в базе несколько юзеров с общим логином
             List params = new LinkedList();
             params.add(username);
             try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
