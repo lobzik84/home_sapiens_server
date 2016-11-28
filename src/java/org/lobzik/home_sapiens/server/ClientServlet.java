@@ -125,6 +125,12 @@ public class ClientServlet extends HttpServlet {
                             doRequestLogin(request, response);
                         }
                         break;
+                    
+                    case "do_sql_query":
+                    case "do_system_command":
+                        log.warn("trying to execute sys command from remote!");
+                        response.getWriter().print("Not allowed!!");
+                        break;
 
                     default:
                         if (userId > 0 && boxId > 0) {

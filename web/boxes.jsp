@@ -22,7 +22,7 @@ String cont = request.getContextPath();
         <a href="<%=cont%>/control/">Status</a><br><br>
         <table border="1px">
             <thead>
-            <th>box_id</th><th>version</th><th>name</th><th>status</th><th>phone_num</th><th>ssid</th><th>wpa_psk</th><th>IP</th><th>Log</th>
+            <th>box_id</th><th>version</th><th>name</th><th>status</th><th>users_phone</th><th>box_phone</th><th>ssid</th><th>wpa_psk</th><th>IP</th><th>Log</th>
             </thead>
             <tbody>
                 <%for (HashMap h:boxes){%> <tr>
@@ -30,6 +30,7 @@ String cont = request.getContextPath();
                     <td><%=h.get("version")%></td>
                     <td><%=h.get("name")%></td>
                     <td><%=h.get("status")%></td>
+                    <td><%=h.get("login")%></td>
                     <td><%=h.get("phone_num")%></td>
                     <td><%=h.get("ssid")%></td>
                     <td><%=h.get("wpa_psk")%></td>
@@ -39,5 +40,9 @@ String cont = request.getContextPath();
                 <%}%>
             </tbody>
         </table>
+            <br>
+            <br>
+            <form method="POST" action="<%=cont%>/control/box_users_drop"> Drop! All users from box_id <input type="text" name="box_id"/> <input type="Submit" name="Submit" value="drop"/></form> 
+            
     </body>
 </html>

@@ -78,8 +78,44 @@ public class ControlServlet extends HttpServlet {
             String[] pathEl = path.split("/");
             if (pathEl.length > 0) {
                 switch (pathEl[1]) {
+                    case "box_users_drop":
+                        if (request.getMethod().equals("POST")) {
+                            int boxId = Tools.parseInt(request.getParameter("box_id"), 0);
+
+                            if (boxId > 0 && BoxRequestHandler.getRemoteIP(boxId).length() > 0) {
+                                log.info("Dropping users from box_id =" + boxId + " admin ip " + remoteAddr);
+                                try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                                    String sql = "select user_id from users where box_id=" + boxId + " order by sync_time desc";
+                                    List<HashMap> resList = DBSelect.getRows(sql, conn);
+                                    int userId = Tools.parseInt(resList.get(0).get("user_id"), 0);
+                                    JSONObject dropRequest = new JSONObject();
+                                    dropRequest.put("action", "do_sql_query");
+                                    dropRequest.put("sql", "delete from users;");
+                                    JSONObject boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, dropRequest);
+                                    if (boxReply.getString("result").equals("success")) {
+                                        log.info("Remote user dropped successfully, dropping local");
+                                        DBSelect.executeStatement("delete from users where box_id=" + boxId, null, conn);
+                                        log.info("local user dropped for box id=" + boxId + ", restarting remote box");
+                                        JSONObject rebootRequest = new JSONObject();
+                                        rebootRequest.put("action", "do_system_command");
+                                        rebootRequest.put("command", "sudo service tomcat7 restart");
+                                        boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, rebootRequest);
+                                        if (boxReply.getString("result").equals("success")) {
+                                            log.info("Box restarted");
+                                        }
+                                    } else {
+                                        log.error(boxReply.getString("message"));
+                                    }
+                                } catch (Exception e) {
+                                    log.error(e.getMessage());
+                                }
+                            }
+                        }
+                        response.sendRedirect(request.getContextPath() + "/control/boxes");
+                        break;
+
                     case "boxes":
-                        String sSQL = "select * from boxes";
+                        String sSQL = "select * from boxes b left join users u on u.box_id=b.id;";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> boxes = DBSelect.getRows(sSQL, conn);
                             for (HashMap box : boxes) {
