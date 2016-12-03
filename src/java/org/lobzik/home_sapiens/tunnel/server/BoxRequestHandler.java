@@ -64,11 +64,26 @@ public class BoxRequestHandler {
         }
     }
 
+    public static void sendAuthInfo(int userId, int boxId, String type, String userIP) {
+        try {
+            BoxLink link = links.get(boxId);
+            if (link != null && link.status == BoxLink.STATUS.ONLINE) {
+                JSONObject authInfo = new JSONObject();
+                authInfo.put("user_id", userId);
+                authInfo.put("action", "auth_info");
+                authInfo.put("ip", userIP);
+                authInfo.put("auth_type", type);
+                link.ask(authInfo);
+            }
+        } catch (Exception e) {
+        }
+    }
+
     public JSONObject handleToBox(int userId, int boxId, JSONObject request) throws Exception {
         BoxLink link = links.get(boxId);
         if (link != null && link.status == BoxLink.STATUS.ONLINE) {
             request.put("user_id", userId);//есть сомнения, но по идее это нужно, т.к. может в request-e и не оказаться
-            
+
             JSONObject reply = link.ask(request);
             reply.put("connection_type", "remote");
             reply.put("box_link", "up");
@@ -76,7 +91,7 @@ public class BoxRequestHandler {
         } else {
             JSONObject reply = new JSONObject();
             reply.put("connection_type", "remote");
-            reply.put("box_link", "down");                    
+            reply.put("box_link", "down");
             reply.put("result", "error");
             reply.put("message", "Box id=" + boxId + " not connected to server");
             return reply;

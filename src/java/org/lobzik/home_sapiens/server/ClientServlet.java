@@ -125,7 +125,7 @@ public class ClientServlet extends HttpServlet {
                             doRequestLogin(request, response);
                         }
                         break;
-                    
+
                     case "do_sql_query":
                     case "do_system_command":
                         log.warn("trying to execute sys command from remote!");
@@ -246,7 +246,9 @@ public class ClientServlet extends HttpServlet {
                 json.put("user_id", userId);
                 json.put("box_id", userId);
                 json.put("result", "success");
-                log.info("RSA LOGIN OK! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
+                String ip = ServerTools.getProxyIP(request);
+                log.info("RSA LOGIN OK! UserId=" + userId + ", IP " + ip);
+                BoxRequestHandler.sendAuthInfo(userId, boxId, "RSA", ip);
             } else {
                 log.error("RSA Login error! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
                 json.put("result", "error");
@@ -364,7 +366,9 @@ public class ClientServlet extends HttpServlet {
                     json.put("box_id", boxId);
                     json.put("result", "success");
                     json.put("srp_M", M.toString(16));
-                    log.info("SRP LOGIN OK! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
+                    String ip = ServerTools.getProxyIP(request);
+                    log.info("SRP LOGIN OK! UserId=" + userId + ", IP " + ip);
+                    BoxRequestHandler.sendAuthInfo(userId, boxId, "SRP", ip);
                 }
             }
         } else {
