@@ -247,10 +247,10 @@ public class ClientServlet extends HttpServlet {
                 json.put("box_id", userId);
                 json.put("result", "success");
                 String ip = ServerTools.getProxyIP(request);
-                log.info("RSA LOGIN OK! UserId=" + userId + ", IP " + ip);
+                log.info("RSA LOGIN OK! BoxId=" + boxId +  ", UserId=" + userId + ", IP " + ip);
                 BoxRequestHandler.sendAuthInfo(userId, boxId, "RSA", ip);
             } else {
-                log.error("RSA Login error! UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
+                log.error("RSA Login error! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
                 json.put("result", "error");
                 json.put("message", "Login using RSA digest failed");
             }
@@ -367,7 +367,7 @@ public class ClientServlet extends HttpServlet {
                     json.put("result", "success");
                     json.put("srp_M", M.toString(16));
                     String ip = ServerTools.getProxyIP(request);
-                    log.info("SRP LOGIN OK! UserId=" + userId + ", IP " + ip);
+                    log.info("SRP LOGIN OK! BoxId=" + boxId +  ", UserId=" + userId + ", IP " + ip);
                     BoxRequestHandler.sendAuthInfo(userId, boxId, "SRP", ip);
                 }
             }

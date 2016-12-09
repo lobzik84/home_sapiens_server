@@ -42,7 +42,7 @@ String cont = request.getContextPath();
         </table>
             <br>
             <br>
-            <form method="POST" action="<%=cont%>/control/box_users_drop"> Drop! All users from box_id <input type="text" name="box_id"/> <input type="Submit" name="Submit" value="drop"/></form> 
+            <form method="POST" action="<%=cont%>/control/box_users_drop"> Drop! All users from box_id <input type="text" name="box_id"/>  UserId override (usually empty) <input type="text" name="user_id"/> <input type="Submit" name="Submit" value="drop"/></form> 
             
     </body>
 </html>

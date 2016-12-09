@@ -35,7 +35,9 @@ public class DBWorker {
                 user.put("verifier", json.getString("verifier"));
                 user.put("status", json.getInt("status"));
                 user.put("public_key", json.getString("public_key"));
-                user.put("keyfile", json.getString("keyfile"));
+                if (json.has("keyfile")) {
+                    user.put("keyfile", json.getString("keyfile"));// однажды приехал юзер без кейфайла и всё сломалось. пусть лучше хоть такой будет, так почистим
+                }
                 user.put("sync_time", new Date());
 
                 int userId = DBTools.insertRow("users", user, conn);

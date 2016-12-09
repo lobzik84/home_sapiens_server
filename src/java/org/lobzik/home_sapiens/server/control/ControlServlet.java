@@ -81,13 +81,16 @@ public class ControlServlet extends HttpServlet {
                     case "box_users_drop":
                         if (request.getMethod().equals("POST")) {
                             int boxId = Tools.parseInt(request.getParameter("box_id"), 0);
-
+                            int userId = Tools.parseInt(request.getParameter("user_id"), 0);
                             if (boxId > 0 && BoxRequestHandler.getRemoteIP(boxId).length() > 0) {
                                 log.info("Dropping users from box_id =" + boxId + " admin ip " + remoteAddr);
                                 try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                                     String sql = "select user_id from users where box_id=" + boxId + " order by sync_time desc";
                                     List<HashMap> resList = DBSelect.getRows(sql, conn);
-                                    int userId = Tools.parseInt(resList.get(0).get("user_id"), 0);
+                                    //int userId = 1;//
+                                    if (!resList.isEmpty() && userId == 0) {
+                                        userId = Tools.parseInt(resList.get(0).get("user_id"), 0);
+                                    }
                                     JSONObject dropRequest = new JSONObject();
                                     dropRequest.put("action", "do_sql_query");
                                     dropRequest.put("sql", "delete from users;");
