@@ -22,7 +22,7 @@ String cont = request.getContextPath();
         <a href="<%=cont%>/control/">Status</a><br><br>
         <table border="1px">
             <thead>
-            <th>box_id</th><th>version</th><th>name</th><th>status</th><th>users_phone</th><th>box_phone</th><th>ssid</th><th>wpa_psk</th><th>IP</th><th>Log</th>
+            <th>box_id</th><th>version</th><th>name</th><th>status</th><th>users_phone</th><th>box_phone</th><th>ssid</th><th>wpa_psk</th><th>IP</th><th>Bytes In</th><th>Bytes Out</th><th>Log</th>
             </thead>
             <tbody>
                 <%for (HashMap h:boxes){%> <tr>
@@ -35,6 +35,8 @@ String cont = request.getContextPath();
                     <td><%=h.get("ssid")%></td>
                     <td><%=h.get("wpa_psk")%></td>
                     <td><%=h.get("IP")%></td>
+                    <td><%=h.get("bytes_in")%></td>
+                    <td><%=h.get("bytes_out")%></td>
                     <td><a href="<%=cont%>/control/box_logs/<%=h.get("id")%>"> >> </a></td>
                 </tr>
                 <%}%>

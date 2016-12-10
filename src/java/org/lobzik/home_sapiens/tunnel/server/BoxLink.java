@@ -38,6 +38,9 @@ public class BoxLink {
     public Session session;
 
     private Logger log;
+    
+    private long bytesOut = 0;
+    private long bytesIn = 0;
 
     public String remoteAddr;
 
@@ -124,11 +127,18 @@ public class BoxLink {
     }
 
     public JSONObject ask(JSONObject request) throws Exception {
+        if (request != null) {
+            bytesOut += request.toString().length() * 2; //because utf-8 is utf-8
+        }
         BoxDialog dialog = new BoxDialog(request);
         queue.add(dialog);
         dialog.doDialog(this);
         dialog = queue.poll();
         resumeNext();
+        if (dialog != null && dialog.responseJson != null) {
+            bytesIn += dialog.responseJson.toString().length() * 2;
+        }
+
         return dialog.responseJson;
     }
 
@@ -153,5 +163,16 @@ public class BoxLink {
         }
         status = STATUS.OFFLINE;
     }
+    
+   public long getBytesIn() {
+       return bytesIn;
+   }
 
+   public long getBytesOut() {
+       return bytesOut;
+   }
+   
+   public Logger getLog() {
+       return log;
+   }
 }

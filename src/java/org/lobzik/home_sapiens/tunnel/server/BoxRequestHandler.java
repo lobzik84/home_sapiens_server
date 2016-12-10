@@ -133,5 +133,10 @@ public class BoxRequestHandler {
             ee.printStackTrace();
         }
     }
+    
+    public static BoxLink getBoxLink(int boxId) {
+        BoxLink link = links.get(boxId);
+        return link;
+    }
 
 }

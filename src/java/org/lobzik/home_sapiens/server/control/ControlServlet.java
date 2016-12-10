@@ -23,6 +23,7 @@ import org.lobzik.home_sapiens.entity.Box;
 import org.lobzik.home_sapiens.server.CommonData;
 import org.lobzik.home_sapiens.server.ConnJDBCAppender;
 import org.lobzik.home_sapiens.server.ServerTools;
+import org.lobzik.home_sapiens.tunnel.server.BoxLink;
 import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
 import org.lobzik.tools.Tools;
 import org.lobzik.tools.db.postgresql.DBSelect;
@@ -118,11 +119,19 @@ public class ControlServlet extends HttpServlet {
                         break;
 
                     case "boxes":
-                        String sSQL = "select * from boxes b left join users u on u.box_id=b.id;";
+                        String sSQL = "select * from boxes b left join users u on u.box_id=b.id order by b.id;";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> boxes = DBSelect.getRows(sSQL, conn);
                             for (HashMap box : boxes) {
-                                box.put("IP", BoxRequestHandler.getRemoteIP(Tools.parseInt(box.get("id"), 0)));
+
+                                BoxLink link = BoxRequestHandler.getBoxLink(Tools.parseInt(box.get("id"), 0));
+                                if (link != null) {
+                                    box.put("IP", BoxRequestHandler.getRemoteIP(Tools.parseInt(box.get("id"), 0)));
+                                    box.put("bytes_in", link.getBytesIn());
+                                    box.put("bytes_out", link.getBytesOut());
+                                    
+                                }
+                            
                             }
                             HashMap<String, Object> jspData = new HashMap();
                             jspData.put("boxes", boxes);
@@ -140,7 +149,7 @@ public class ControlServlet extends HttpServlet {
                         if (pathEl.length > 2 && Tools.parseInt(pathEl[2], 0) > 0) {
                             sSQL += " and box_id=" + pathEl[2];
                         }
-                        sSQL += " order by dated ";
+                        sSQL += " order by dated desc";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> logs = DBSelect.getRows(sSQL, conn);
                             HashMap<String, Object> jspData = new HashMap();
@@ -155,7 +164,7 @@ public class ControlServlet extends HttpServlet {
 
                     case "log":
                         sSQL = "select * from server_log where 1=1 ";
-                        sSQL += " order by dated ";
+                        sSQL += " order by dated desc ";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> logs = DBSelect.getRows(sSQL, conn);
                             HashMap<String, Object> jspData = new HashMap();
@@ -169,10 +178,11 @@ public class ControlServlet extends HttpServlet {
                         break;
 
                     case "users":
-                        sSQL = "select * from users where 1=1 ";
+                        sSQL = "select * from users where 1=1";
                         if (pathEl.length > 2 && Tools.parseInt(pathEl[2], 0) > 0) {
                             sSQL += " and box_id=" + pathEl[2];
                         }
+                        sSQL += " order by box_id;";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> users = DBSelect.getRows(sSQL, conn);
                             HashMap<String, Object> jspData = new HashMap();

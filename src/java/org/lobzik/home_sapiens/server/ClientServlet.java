@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.UsersSession;
+import org.lobzik.home_sapiens.tunnel.server.BoxLink;
 import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
 import org.lobzik.tools.Tools;
 import org.lobzik.tools.db.postgresql.DBSelect;
@@ -247,10 +248,20 @@ public class ClientServlet extends HttpServlet {
                 json.put("box_id", userId);
                 json.put("result", "success");
                 String ip = ServerTools.getProxyIP(request);
-                log.info("RSA LOGIN OK! BoxId=" + boxId +  ", UserId=" + userId + ", IP " + ip);
+                BoxLink link = BoxRequestHandler.getBoxLink(boxId);
+                if (link != null && link.getLog() != null) {
+                    link.getLog().info("RSA LOGIN OK! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ip);
+                } else {
+                    log.info("RSA LOGIN OK! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ip);
+                }
                 BoxRequestHandler.sendAuthInfo(userId, boxId, "RSA", ip);
             } else {
-                log.error("RSA Login error! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
+                BoxLink link = BoxRequestHandler.getBoxLink(boxId);
+                if (link != null && link.getLog() != null) {
+                    link.getLog().error("RSA Login error! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
+                } else {
+                    log.error("RSA Login error! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ServerTools.getProxyIP(request));
+                }
                 json.put("result", "error");
                 json.put("message", "Login using RSA digest failed");
             }
@@ -367,7 +378,14 @@ public class ClientServlet extends HttpServlet {
                     json.put("result", "success");
                     json.put("srp_M", M.toString(16));
                     String ip = ServerTools.getProxyIP(request);
-                    log.info("SRP LOGIN OK! BoxId=" + boxId +  ", UserId=" + userId + ", IP " + ip);
+
+                    BoxLink link = BoxRequestHandler.getBoxLink(boxId);
+                    if (link != null && link.getLog() != null) {
+                        link.getLog().info("SRP LOGIN OK! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ip);
+                    } else {
+                        log.info("SRP LOGIN OK! BoxId=" + boxId + ", UserId=" + userId + ", IP " + ip);
+                    }
+
                     BoxRequestHandler.sendAuthInfo(userId, boxId, "SRP", ip);
                 }
             }
