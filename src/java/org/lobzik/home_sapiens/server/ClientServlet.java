@@ -24,6 +24,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.websocket.Session;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.UsersSession;
@@ -144,8 +145,13 @@ public class ClientServlet extends HttpServlet {
                 response.getWriter().print("accepted json only");
             }
         } catch (Throwable e) {
+            String origin = "";
+            if (e.getStackTrace().length > 0) {
+                origin = e.getStackTrace()[0].toString()  + " - ";
+            }
+            
             e.printStackTrace();
-            log.error(e);
+            log.error(origin + e);
             response.getWriter().print("{\"result\":\"error\",\"message\":\"" + e.getMessage() + "\"}");
         }
 
