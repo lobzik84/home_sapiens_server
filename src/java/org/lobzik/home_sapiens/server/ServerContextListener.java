@@ -11,6 +11,7 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.lobzik.home_sapiens.server.control.DBStatWriter;
 import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
 
 /**
@@ -29,6 +30,7 @@ public class ServerContextListener implements ServletContextListener {
         BasicConfigurator.configure(consoleAppender);
         log.info("Root Log init ok!");
         log.info("Starting HS server.");
+        DBStatWriter.getInstance().start();
     }
 
     @Override

@@ -118,6 +118,74 @@ public class ControlServlet extends HttpServlet {
                         response.sendRedirect(request.getContextPath() + "/control/boxes");
                         break;
 
+                    case "box_run_script":
+                        if (request.getMethod().equals("POST")) {
+                            int boxId = Tools.parseInt(request.getParameter("box_id"), 0);
+                            int userId = Tools.parseInt(request.getParameter("user_id"), 0);
+                            int scriptId = Tools.parseInt(request.getParameter("script_id"), 0);
+                            if (boxId > 0 && BoxRequestHandler.getRemoteIP(boxId).length() > 0 && scriptId > 0) {
+                                Logger boxLog = BoxRequestHandler.getBoxLink(boxId).getLog();
+                                log.info("Executing script id = " + scriptId + " on box_id =" + boxId + " admin ip " + remoteAddr);
+                                boxLog.info("Executing script id = " + scriptId + " on box_id =" + boxId + " admin ip " + remoteAddr);
+
+                                try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                                    String sql = "select user_id from users where box_id=" + boxId + " order by sync_time desc";
+                                    List<HashMap> resList = DBSelect.getRows(sql, conn);
+                                    if (!resList.isEmpty() && userId == 0) {
+                                        userId = Tools.parseInt(resList.get(0).get("user_id"), 0);
+                                    }
+                                    sql = "select * from remote_scripts_data where script_id=" + scriptId + " order by id";
+                                    resList = DBSelect.getRows(sql, conn);
+                                    for (HashMap c : resList) {
+                                        String type = (String) c.get("command_type");
+                                        String command = (String) c.get("command_body");
+                                        switch (type) {
+                                            case "SQL":
+                                                boxLog.info("Executing SQL command " + command);
+                                                JSONObject sqlCommand = new JSONObject();
+                                                sqlCommand.put("action", "do_sql_query");
+                                                sqlCommand.put("sql", command);
+                                                JSONObject boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, sqlCommand);
+                                                if (boxReply.getString("result").equals("success")) { 
+                                                    boxLog.info("OK!");
+                                                } else {
+                                                    String err = "";
+                                                    if (boxReply.has("message")) {
+                                                        boxReply.getString("message");
+                                                    }
+                                                    boxLog.error("Error exec SQL! " + err);
+                                                    break;
+                                                }
+                                                
+                                                break;
+                                                
+                                            case "SYS":
+                                                boxLog.info("Executing SYS command " + command);
+                                                JSONObject sysCommand = new JSONObject();
+                                                sysCommand.put("action", "do_system_command");
+                                                sysCommand.put("command",  command);
+                                                boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, sysCommand);
+                                                if (boxReply.getString("result").equals("success")) { 
+                                                    boxLog.info("OK!");
+                                                } else {
+                                                    String err = "";
+                                                    if (boxReply.has("message")) {
+                                                        boxReply.getString("message");
+                                                    }
+                                                    boxLog.error("Error exec SYS! " + err);
+                                                    break;
+                                                }
+                                                break;
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    log.error(e.getMessage());
+                                }
+                            }
+                        }
+                        response.sendRedirect(request.getContextPath() + "/control/boxes");
+                        break;
+
                     case "boxes":
                         String sSQL = "select * from boxes b left join users u on u.box_id=b.id order by b.id;";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
@@ -129,12 +197,14 @@ public class ControlServlet extends HttpServlet {
                                     box.put("IP", BoxRequestHandler.getRemoteIP(Tools.parseInt(box.get("id"), 0)));
                                     box.put("bytes_in", link.getBytesIn());
                                     box.put("bytes_out", link.getBytesOut());
-                                    
+
                                 }
-                            
+
                             }
                             HashMap<String, Object> jspData = new HashMap();
                             jspData.put("boxes", boxes);
+                            List<HashMap> scripts = DBSelect.getRows("select * from remote_scripts; ", conn);
+                            jspData.put("scripts", scripts);
                             RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/boxes.jsp");
                             request.setAttribute("JspData", jspData);
                             disp.include(request, response);

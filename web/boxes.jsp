@@ -10,6 +10,7 @@
 <!DOCTYPE html>
 <% 
 List<HashMap> boxes = (List<HashMap>)JspData.get("boxes");
+List<HashMap> scripts  = (List<HashMap>)JspData.get("scripts");
 String cont = request.getContextPath();
 %>
 <html>
@@ -45,6 +46,18 @@ String cont = request.getContextPath();
             <br>
             <br>
             <form method="POST" action="<%=cont%>/control/box_users_drop"> Drop! All users from box_id <input type="text" name="box_id"/>  UserId override (usually empty) <input type="text" name="user_id"/> <input type="Submit" name="Submit" value="drop"/></form> 
-            
+<% if (scripts != null && !scripts.isEmpty()) {%>           
+            <br>
+            <br>
+            <form method="POST" action="<%=cont%>/control/box_run_script"> Run script 
+                <select name="script_id">
+                    <option value="">---</option>
+                    <% for (Map s:scripts) { %> 
+                    <option value="<%=s.get("id")%>"><%=s.get("name")%></option>
+                    <%}%>
+                </select>
+                on box_id <input type="text" name="box_id"/>  <input type="Submit" name="Submit" value="run"/></form> 
+            <br>
+<% } %>            
     </body>
 </html>
