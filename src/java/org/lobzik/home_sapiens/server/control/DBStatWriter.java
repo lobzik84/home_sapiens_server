@@ -60,7 +60,7 @@ public class DBStatWriter {
         c.set(Calendar.SECOND, 0);
         c.set(Calendar.MILLISECOND, 0);
         
-        timer.scheduleAtFixedRate(task, c.getTime(), 5 * 60 * 1000); //5 min
+        timer.scheduleAtFixedRate(task, c.getTime(), 30 * 60 * 1000); //30 min
     }
 
     class DBStatTask extends TimerTask {
@@ -72,7 +72,7 @@ public class DBStatWriter {
         @Override
         public void run() {
             try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
-                log.info("writing traffic stat");
+                //log.info("writing traffic stat");
                 String sql = "select * from boxes where status=1";
                 List<HashMap> resList = DBSelect.getRows(sql, conn);
                 for (Map box : resList) {
@@ -110,7 +110,7 @@ public class DBStatWriter {
                         log.error(e);
                     }
                 }
-                log.info("Done.");
+               // log.info("Done.");
             } catch (Exception e) {
                 log.error(e.getMessage());
             }

@@ -102,7 +102,7 @@ public class ControlServlet extends HttpServlet {
                                         log.info("local user dropped for box id=" + boxId + ", restarting remote box");
                                         JSONObject rebootRequest = new JSONObject();
                                         rebootRequest.put("action", "do_system_command");
-                                        rebootRequest.put("command", "sudo service tomcat7 restart");
+                                        rebootRequest.put("command", "sudo halt -p");
                                         boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, rebootRequest);
                                         if (boxReply.getString("result").equals("success")) {
                                             log.info("Box restarted");
