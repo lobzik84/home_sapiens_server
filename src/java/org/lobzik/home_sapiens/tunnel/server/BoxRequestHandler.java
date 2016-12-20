@@ -84,7 +84,7 @@ public class BoxRequestHandler {
         if (link != null && link.status == BoxLink.STATUS.ONLINE) {
             request.put("user_id", userId);//есть сомнения, но по идее это нужно, т.к. может в request-e и не оказаться
 
-            JSONObject reply = link.ask(request);
+            JSONObject reply = link.ask(request); //если вернулся null - нужно error
             reply.put("connection_type", "remote");
             reply.put("box_link", "up");
             return reply;

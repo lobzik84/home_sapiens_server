@@ -33,7 +33,8 @@ public class DBStatWriter {
     private static final HashMap<Integer, Long> lastOutBytesValues = new HashMap();
     private static DBStatWriter instance = new DBStatWriter();
     private static final Logger log = Logger.getLogger("DBStatWriter");
-
+    private static final int DAYS_TO_STORE_LOGS_AND_STATS = 7;
+    
     static {
         try {
             log.addAppender(ConnJDBCAppender.getServerAppender(DBTools.getDataSource(CommonData.dataSourceName)));
@@ -61,7 +62,21 @@ public class DBStatWriter {
         c.set(Calendar.MILLISECOND, 0);
         
         timer.scheduleAtFixedRate(task, c.getTime(), 30 * 60 * 1000); //30 min
+    
+        Timer cleanTimer = new Timer("DBStatCleaner-Timer", true);
+        DBCleanTask cleanTask = new DBCleanTask();
+        Calendar cc = new GregorianCalendar();
+        cc.add(Calendar.DAY_OF_YEAR, 1);
+        cc.set(Calendar.HOUR, 5);
+        cc.set(Calendar.MINUTE, 0);
+        cc.set(Calendar.SECOND, 0);
+        cc.set(Calendar.MILLISECOND, 0);
+        
+        cleanTimer.scheduleAtFixedRate(cleanTask, cc.getTime(), 24 * 60 * 60 * 1000); //1 day
+
+    
     }
+    
 
     class DBStatTask extends TimerTask {
         
@@ -118,4 +133,31 @@ public class DBStatWriter {
 
     }
 
+    class DBCleanTask extends TimerTask {
+        
+        public DBCleanTask() {
+            super();
+        }
+
+        @Override
+        public void run() {
+            try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                log.info("clearing traffic stat");
+                long age = System.currentTimeMillis() / 1000;
+                age = age - DAYS_TO_STORE_LOGS_AND_STATS * 24 * 60 * 60; // 5 days old
+                String sql = "delete from traffic_stat where extract(epoch from dated) < " + age;
+                DBSelect.executeStatement(sql, null, conn);
+                sql = "delete from box_logs where extract(epoch from dated) < " + age;
+                DBSelect.executeStatement(sql, null, conn);
+                sql = "delete from server_log where extract(epoch from dated) < " + age;
+                DBSelect.executeStatement(sql, null, conn);
+                              
+
+                log.info("Done.");
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+        }
+
+    }
 }

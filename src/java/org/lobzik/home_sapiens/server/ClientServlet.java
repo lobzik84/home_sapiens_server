@@ -24,7 +24,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.websocket.Session;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.UsersSession;
@@ -236,6 +235,9 @@ public class ClientServlet extends HttpServlet {
         String sSQL = "select user_id, public_key from users where status = 1 and user_id=" + userId + " and box_id = " + boxId;
         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
             List<HashMap> resList = DBSelect.getRows(sSQL, conn);
+            if (resList.isEmpty()) {
+                throw new Exception("User id=" + userId + " with box id = " + boxId + "not found");
+            }
             String publicKey = (String) resList.get(0).get("public_key");
             BigInteger modulus = new BigInteger(publicKey, 16);
             RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, CommonData.RSA_E);
@@ -393,6 +395,8 @@ public class ClientServlet extends HttpServlet {
                     }
 
                     BoxRequestHandler.sendAuthInfo(userId, boxId, "SRP", ip);
+                } else {
+                    log.error ("SRP login error! User " + username + " not found in DB");
                 }
             }
         } else {
