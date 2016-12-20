@@ -216,14 +216,16 @@ public class ControlServlet extends HttpServlet {
 
                     case "box_logs":
                         sSQL = "select * from box_logs where 1=1 ";
-                        if (pathEl.length > 2 && Tools.parseInt(pathEl[2], 0) > 0) {
-                            sSQL += " and box_id=" + pathEl[2];
+                        int boxId = Tools.parseInt(pathEl[2], 0);
+                        if (pathEl.length > 2 && boxId > 0) {
+                            sSQL += " and box_id=" + boxId;
                         }
                         sSQL += " order by dated desc";
                         try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                             List<HashMap> logs = DBSelect.getRows(sSQL, conn);
                             HashMap<String, Object> jspData = new HashMap();
                             jspData.put("logs", logs);
+                            jspData.put("boxId",  boxId);
                             RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/box_logs.jsp");
                             request.setAttribute("JspData", jspData);
                             disp.include(request, response);
@@ -305,7 +307,7 @@ public class ControlServlet extends HttpServlet {
                                     try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                                         Box newBox = new Box(boxJson);
                                         newBox.status = Box.Status.REGISTERED;
-                                        int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
+                                        boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
                                         responseJson.put("register_result", "success");
                                         responseJson.put("box_id", boxId);
                                         log.info("Registered new Box id=" + boxId + " from " + remoteAddr);

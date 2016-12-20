@@ -10,6 +10,9 @@
 <!DOCTYPE html>
 <% 
 List<HashMap> logs = (List<HashMap>)JspData.get("logs");
+Integer boxId =  (Integer)JspData.get("boxId");
+long to = System.currentTimeMillis()/1000;
+long from = to - 24 * 60 * 60;
 String cont = request.getContextPath();
 %>
 <html>
@@ -20,6 +23,9 @@ String cont = request.getContextPath();
     <body>
         <h1>Logs</h1>
         <a href="<%=cont%>/control/">Status</a><br><br>
+        <img src="<%=cont%>/traf.png?boxId=<%=boxId%>&from=<%=from%>&to=<%=to%>">
+        <br>
+        <br>
         <table border="1px">
             <thead>
             <th>#</th><th>box_id</th><th>date</th><th>level</th><th>message</th>
