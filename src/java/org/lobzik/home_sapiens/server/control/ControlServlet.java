@@ -8,15 +8,19 @@ package org.lobzik.home_sapiens.server.control;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.DatatypeConverter;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lobzik.home_sapiens.entity.Box;
@@ -75,10 +79,16 @@ public class ControlServlet extends HttpServlet {
             return;
         }
         String path = request.getPathInfo();
+        int adminId = Tools.parseInt(request.getSession().getAttribute("admin_id"), 0);
+
         if (path != null) {
             String[] pathEl = path.split("/");
+            String mode = "";
             if (pathEl.length > 0) {
-                switch (pathEl[1]) {
+                mode = pathEl[1];
+            }
+            if (adminId > 0) {
+                switch (mode) {
                     case "box_users_drop":
                         if (request.getMethod().equals("POST")) {
                             int boxId = Tools.parseInt(request.getParameter("box_id"), 0);
@@ -146,7 +156,7 @@ public class ControlServlet extends HttpServlet {
                                                 sqlCommand.put("action", "do_sql_query");
                                                 sqlCommand.put("sql", command);
                                                 JSONObject boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, sqlCommand);
-                                                if (boxReply.getString("result").equals("success")) { 
+                                                if (boxReply.getString("result").equals("success")) {
                                                     boxLog.info("OK!");
                                                 } else {
                                                     String err = "";
@@ -156,16 +166,16 @@ public class ControlServlet extends HttpServlet {
                                                     boxLog.error("Error exec SQL! " + err);
                                                     break;
                                                 }
-                                                
+
                                                 break;
-                                                
+
                                             case "SYS":
                                                 boxLog.info("Executing SYS command " + command);
                                                 JSONObject sysCommand = new JSONObject();
                                                 sysCommand.put("action", "do_system_command");
-                                                sysCommand.put("command",  command);
+                                                sysCommand.put("command", command);
                                                 boxReply = BoxRequestHandler.getInstance().handleToBox(userId, boxId, sysCommand);
-                                                if (boxReply.getString("result").equals("success")) { 
+                                                if (boxReply.getString("result").equals("success")) {
                                                     boxLog.info("OK!");
                                                 } else {
                                                     String err = "";
@@ -225,7 +235,7 @@ public class ControlServlet extends HttpServlet {
                             List<HashMap> logs = DBSelect.getRows(sSQL, conn);
                             HashMap<String, Object> jspData = new HashMap();
                             jspData.put("logs", logs);
-                            jspData.put("boxId",  boxId);
+                            jspData.put("boxId", boxId);
                             RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/box_logs.jsp");
                             request.setAttribute("JspData", jspData);
                             disp.include(request, response);
@@ -267,7 +277,75 @@ public class ControlServlet extends HttpServlet {
                         }
                         break;
 
-                    case "register":
+                    case "status":
+                        try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+
+                            HashMap<String, Object> jspData = new HashMap();
+                            jspData.put("online_cnt", BoxRequestHandler.getOnlineCount());
+                            sSQL = "select * from (select 1 as a, count(*) boxes_cnt from boxes) b\n"
+                                    + "inner join (select 1 as a, count(*) users_cnt from users) u on u.a = b.a";
+                            List<HashMap> resList = DBSelect.getRows(sSQL, conn);
+                            jspData.putAll(resList.get(0));
+                            RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/status.jsp");
+                            request.setAttribute("JspData", jspData);
+                            disp.include(request, response);
+                        } catch (Exception e) {
+                            log.error(e.toString());
+                        }
+                        break;
+
+                }
+            } else {
+                switch (mode) {
+
+                    case "login":
+                        //TODO set session
+                        int loginAdminId = 0;
+                        if (request.getMethod().equals("POST")) {
+                            String adminLogin = request.getParameter("login");
+                            String adminPass = request.getParameter("password");
+                            if (adminLogin != null && adminPass != null && adminLogin.length() > 0 && adminPass.length() > 0) {
+                                try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
+                                    
+                                    String sSQL = "select id, salt, hash from admins where login=?";
+                                    LinkedList args = new LinkedList();
+                                    args.add(adminLogin);
+                                    List<HashMap> resList = DBSelect.getRows(sSQL, args, conn);
+                                    if (resList.size() == 1) {
+                                        Map h = resList.get(0);
+                                        int id = Tools.parseInt(h.get("id"), 0);
+                                        String salt = (String)h.get("salt");
+                                        String dbHash = (String)h.get("hash");
+                                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                                        byte[] hash = digest.digest((adminPass + ":" + salt).getBytes("UTF-8"));
+                                        String saltedHash = DatatypeConverter.printHexBinary(hash);
+                                        if (dbHash.equals(saltedHash)) {
+                                            loginAdminId = id;
+                                            log.info("Admin login ok! id=" + loginAdminId + ", ip=" + remoteAddr);
+                                        } else {
+                                            log.error("Incorrect password for admin " + adminLogin);
+                                        }
+                                    } else {
+                                        log.error("Admin with login " + adminLogin + " not found");
+                                    }
+                                } catch (Exception e) {
+                                    log.error(e.toString());
+                                }
+                            }
+                        }
+
+                        if (loginAdminId > 0) {
+                            //if ok
+                            request.getSession().setAttribute("admin_id", loginAdminId);
+                            response.sendRedirect(request.getContextPath() + "/control/status");
+
+                        } else {
+                            RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/login.jsp");
+                            disp.include(request, response);
+                        }
+                        break;
+
+                    case "register"://box registration
                         try {
                             response.setCharacterEncoding("UTF-8");
                             response.setContentType("application/json");
@@ -307,7 +385,7 @@ public class ControlServlet extends HttpServlet {
                                     try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
                                         Box newBox = new Box(boxJson);
                                         newBox.status = Box.Status.REGISTERED;
-                                        boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
+                                        int boxId = DBTools.insertRow("boxes", newBox.getMap(), conn);
                                         responseJson.put("register_result", "success");
                                         responseJson.put("box_id", boxId);
                                         log.info("Registered new Box id=" + boxId + " from " + remoteAddr);
@@ -329,25 +407,13 @@ public class ControlServlet extends HttpServlet {
                         }
                         break;
 
-                }
-
-            } else {
-                try (Connection conn = DBTools.openConnection(CommonData.dataSourceName)) {
-
-                    HashMap<String, Object> jspData = new HashMap();
-                    jspData.put("online_cnt", BoxRequestHandler.getOnlineCount());
-                    String sSQL = "select * from (select 1 as a, count(*) boxes_cnt from boxes) b\n"
-                            + "inner join (select 1 as a, count(*) users_cnt from users) u on u.a = b.a";
-                    List<HashMap> resList = DBSelect.getRows(sSQL, conn);
-                    jspData.putAll(resList.get(0));
-                    RequestDispatcher disp = request.getSession().getServletContext().getRequestDispatcher("/status.jsp");
-                    request.setAttribute("JspData", jspData);
-                    disp.include(request, response);
-                } catch (Exception e) {
-                    log.error(e.toString());
+                    default:
+                        response.sendRedirect(request.getContextPath() + "/control/login");
+                        break;
                 }
             }
         }
+
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

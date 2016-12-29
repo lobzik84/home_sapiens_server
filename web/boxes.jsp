@@ -20,7 +20,7 @@ String cont = request.getContextPath();
     </head>
     <body>
         <h1>Boxes</h1>
-        <a href="<%=cont%>/control/">Status</a><br><br>
+        <a href="<%=cont%>/control/status">Status</a><br><br>
         <table border="1px">
             <thead>
             <th>box_id</th><th>version</th><th>name</th><th>status</th><th>users_phone</th><th>box_phone</th><th>ssid</th><th>wpa_psk</th><th>IP</th><th>Bytes In</th><th>Bytes Out</th><th>Log</th>

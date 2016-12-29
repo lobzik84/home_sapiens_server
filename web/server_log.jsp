@@ -19,7 +19,7 @@ String cont = request.getContextPath();
     </head>
     <body>
         <h1>Server log</h1>
-        <a href="<%=cont%>/control/">Status</a><br><br>
+        <a href="<%=cont%>/control/status">Status</a><br><br>
         <table border="1px">
             <thead>
             <th>#</th><th>module</th><th>date</th><th>level</th><th>message</th>

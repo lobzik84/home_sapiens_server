@@ -22,7 +22,7 @@ String cont = request.getContextPath();
     </head>
     <body>
         <h1>Logs</h1>
-        <a href="<%=cont%>/control/">Status</a><br><br>
+        <a href="<%=cont%>/control/status">Status</a><br><br>
         <img src="<%=cont%>/traf.png?boxId=<%=boxId%>&from=<%=from%>&to=<%=to%>">
         <br>
         <br>
