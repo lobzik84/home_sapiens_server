@@ -74,6 +74,7 @@ public class ControlServlet extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String remoteAddr = ServerTools.getProxyIP(request);
+        response.setCharacterEncoding("UTF-8");
         if (!remoteAddr.startsWith(DEVELOPMENT_NETWORK) && !remoteAddr.equals("127.0.0.1")) {
             response.getWriter().println(remoteAddr + " not allowed");
             return;

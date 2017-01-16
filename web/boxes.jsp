@@ -4,6 +4,7 @@
     Author     : lobzik
 --%>
 
+<%@page import="org.lobzik.tools.Tools"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <jsp:useBean id="JspData"  class="java.util.HashMap" scope="request" />
 <%@ page import="java.util.*"%>
@@ -26,7 +27,10 @@ String cont = request.getContextPath();
             <th>box_id</th><th>version</th><th>name</th><th>status</th><th>users_phone</th><th>box_phone</th><th>ssid</th><th>wpa_psk</th><th>IP</th><th>Bytes In</th><th>Bytes Out</th><th>Log</th>
             </thead>
             <tbody>
-                <%for (HashMap h:boxes){%> <tr>
+                <%for (HashMap h:boxes){
+                    int bytesIn = Tools.parseInt(h.get("bytes_in"), 0);
+                    int bytesOut = Tools.parseInt(h.get("bytes_out"), 0);
+                %> <tr>
                     <td><%=h.get("id")%></td>
                     <td><%=h.get("version")%></td>
                     <td><%=h.get("name")%></td>
@@ -35,9 +39,9 @@ String cont = request.getContextPath();
                     <td><%=h.get("phone_num")%></td>
                     <td><%=h.get("ssid")%></td>
                     <td><%=h.get("wpa_psk")%></td>
-                    <td><%=h.get("IP")%></td>
-                    <td><%=h.get("bytes_in")%></td>
-                    <td><%=h.get("bytes_out")%></td>
+                    <td><%=Tools.getStringValue(h.get("IP"), "")%></td>
+                    <td><%=Tools.humanBytes(bytesIn)%></td>
+                    <td><%=Tools.humanBytes(bytesOut)%></td>
                     <td><a href="<%=cont%>/control/box_logs/<%=h.get("id")%>"> >> </a></td>
                 </tr>
                 <%}%>
