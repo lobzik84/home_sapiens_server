@@ -385,7 +385,7 @@ function decryptChunk(uid, name, bytes, offset, data, aeskey, size) {
 
     if (aeskey != undefined && aeskey.length == 32)
         decrypted = asmCrypto.AES_CFB.decrypt(bytes, aeskey, bytes.length < chunkSize); //data, key, padding(!). no IV (zero iv by default)
-    else
+    else//padding is "AES/ECB/PKCS7Padding" if chunk is last
         decrypted = bytes;
     data.push(decrypted);
 
