@@ -384,7 +384,7 @@ function decryptChunk(uid, name, bytes, offset, data, aeskey, size) {
     var decrypted;
 
     if (aeskey != undefined && aeskey.length == 32)
-        decrypted = asmCrypto.AES_CFB.decrypt(bytes, aeskey, bytes.length < chunkSize);
+        decrypted = asmCrypto.AES_CFB.decrypt(bytes, aeskey, bytes.length < chunkSize); //data, key, padding(!). no IV (zero iv by default)
     else
         decrypted = bytes;
     data.push(decrypted);
