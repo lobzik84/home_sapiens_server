@@ -26,7 +26,7 @@ import org.lobzik.tools.Tools;
 public class DowloadFileServlet extends HttpServlet {
 
 	//FileTools fileTools = SysCommonData.fileTools;
-        String workDir = "/opt/oracle/storage/hs/";
+        String workDir = "/home/lobzik/Temp/hs_bkp_files/";
 	/**
 	 * Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
 	 *
