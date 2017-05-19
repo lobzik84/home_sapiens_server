@@ -53,8 +53,8 @@
         <h1>Files Decrypt & Download JS Test</h1>
         RSA User Keys for decryption
         <br>
-       Public key <input type="text" id="publicKey" name="publicKey" value="9fa9ece4a4e17f78c0020848ead4dcbb43300a84986720830632cb444a02ce9abdb8a3d52a7e8c2b6436ac7022be5639a5dad1effc5946e031ecf7ce6d81326f50f75e5451d4d77475e67b04cb9fc8074f7a5ce5b92258531819ba8469cf0163b34c4832c90f105dde248f30561bf8bb2a59766f556a2c986ea61a3392a47e69"/> <br>
-       Private key <input type="text" id="privateKey" name="privateKey" value="5bebf5d1f1474e1f53d417b6fb540fbcd442bd5b776eb01e1f1c714060a7db10e5b77ec34412d55a49f8dc30372083fdee89dba22213b8256d38f3b669ff1eec648e728274f893edf649330280018402fb0c57c7dc8f799297b241418756c974e739e88cfaf96f407cc17ea0a097cf23d7a9867f47b1992b7365690ecae4750d"/> <br>
+       Public key <input type="text" id="publicKey" name="publicKey" value=""/> <br>
+       Private key <input type="text" id="privateKey" name="privateKey" value=""/> <br>
        
         <%
         //String aesKey = request.getParameter("aesKey");
