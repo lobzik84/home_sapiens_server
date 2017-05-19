@@ -37,7 +37,6 @@ import org.lobzik.tools.db.postgresql.DBTools;
 @WebServlet(name = "BackupUploadServlet", urlPatterns = {"/bkp/*"})
 public class BackupUploadServlet extends HttpServlet {
 
-    public static final String UPLOAD_DIR = "/home/lobzik/Temp/hs_bkp_files/";
     public static final String TEMP_EXT = ".tmp";
 
     @Override
@@ -88,8 +87,9 @@ public class BackupUploadServlet extends HttpServlet {
             if (filename != null && pos >= 0) {
                 filename = URLDecoder.decode(filename, "UTF-8");
                 if (pos == 0) {
-                    File old = new File(UPLOAD_DIR + filename);
-                    File tmp = new File(UPLOAD_DIR + filename + TEMP_EXT);
+                    File old = CommonData.fileTools.getFile(filename);
+                    File tmp = CommonData.fileTools.getFile(filename + TEMP_EXT);
+
                     if (old.exists() || tmp.exists()) {
                         response.sendError(500, "Cannot start upload - file exists");
                         return;
@@ -98,7 +98,7 @@ public class BackupUploadServlet extends HttpServlet {
                     }
                 }
 
-                File tmp = new File(UPLOAD_DIR + filename + TEMP_EXT);
+                 File tmp = CommonData.fileTools.getFile(filename + TEMP_EXT);
                 RandomAccessFile raf = new RandomAccessFile(tmp.getAbsolutePath(), "rw");
                 //Save to file
                 raf.seek(pos);
@@ -121,8 +121,8 @@ public class BackupUploadServlet extends HttpServlet {
                 boxLog.info("Done backup!");
                 filename = URLDecoder.decode(filename, "UTF-8");
                 request.getSession().removeAttribute("fileUploadSession");
-                Path src = Paths.get(UPLOAD_DIR + filename + TEMP_EXT);
-                Path dst = Paths.get(UPLOAD_DIR + filename);
+                Path src = Paths.get(CommonData.fileTools.getFile(filename).getAbsolutePath() + TEMP_EXT);
+                Path dst = Paths.get(CommonData.fileTools.getFile(filename).getAbsolutePath());
 
                 Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
 

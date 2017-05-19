@@ -7,6 +7,7 @@ package org.lobzik.home_sapiens.server;
 
 import java.math.BigInteger;
 import java.util.HashMap;
+import org.inet.filetools.FileTools;
 import org.inet.mail.Mailer;
 
 /**
@@ -21,5 +22,6 @@ public class CommonData {
     public static HashMap<Integer, String> challengeStorage = new HashMap();
     public static final BigInteger RSA_E = new BigInteger("65537");
     public static final String dataSourceName = "jdbc/home_sapiens_dataPooledDS";
-
+    public static FileTools fileTools = null;
+    public static final String STORAGE_FOLDER = "hs";
 }

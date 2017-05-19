@@ -5,6 +5,7 @@
  */
 package org.lobzik.home_sapiens.server;
 
+import java.io.File;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import org.apache.log4j.BasicConfigurator;
@@ -13,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.lobzik.home_sapiens.server.control.DBStatWriter;
 import org.lobzik.home_sapiens.tunnel.server.BoxRequestHandler;
+import org.inet.filetools.FileTools;
 
 /**
  * Web application lifecycle listener.
@@ -31,6 +33,14 @@ public class ServerContextListener implements ServletContextListener {
         log.info("Root Log init ok!");
         log.info("Starting HS server.");
         DBStatWriter.getInstance().start();
+
+        try {
+            File configFile = new File(sce.getServletContext().getRealPath("/") + "WEB-INF/filetools.properties");
+            CommonData.fileTools = new FileTools(configFile, CommonData.STORAGE_FOLDER);
+            log.info("Filetools init ok");
+        } catch (Exception e) {
+            log.error("Failed to init filetools: " + e.getMessage());
+        }
     }
 
     @Override

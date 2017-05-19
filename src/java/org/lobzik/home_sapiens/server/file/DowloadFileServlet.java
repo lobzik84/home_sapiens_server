@@ -15,6 +15,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.lobzik.home_sapiens.server.CommonData;
 import org.lobzik.tools.Tools;
 
 /**
@@ -25,8 +26,6 @@ import org.lobzik.tools.Tools;
 
 public class DowloadFileServlet extends HttpServlet {
 
-	//FileTools fileTools = SysCommonData.fileTools;
-        String workDir = "/home/lobzik/Temp/hs_bkp_files/";
 	/**
 	 * Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
 	 *
@@ -66,7 +65,7 @@ public class DowloadFileServlet extends HttpServlet {
 				return;
 			}
 			filename = URLDecoder.decode(filename, "UTF-8");
-			File file = new File(workDir + filename);//fileTools.getFile(filename);
+			File file = CommonData.fileTools.getFile(filename);//fileTools.getFile(filename);
 			if (!file.exists()) {
 				response.sendError(500, "Cannot download - file not found");
 				return;
