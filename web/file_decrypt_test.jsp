@@ -55,7 +55,7 @@
         <br>
        Public key <input type="text" id="publicKey" name="publicKey" value=""/> <br>
        Private key <input type="text" id="privateKey" name="privateKey" value=""/> <br>
-       
+       <h2> Backups </h2>
         <%
         //String aesKey = request.getParameter("aesKey");
 
@@ -75,6 +75,28 @@
         
     
  %> 
+ 
+ <h2> Videos </h2>
+        <%
+        //String aesKey = request.getParameter("aesKey");
+
+            conn = null;
+            try {
+                conn = DBTools.openConnection(CommonData.dataSourceName);
+                List<HashMap> dbFiles = DBSelect.getRows("select * from video_files", null, conn);
+                for (HashMap dbFile:dbFiles) {
+        %> <a href="#" onclick="downloadBkpFile(<%=dbFile.get("box_id")%>, '<%=dbFile.get("filename")%>', '<%=dbFile.get("keycipher")%>')"><%=dbFile.get("filename")%></a> <br><%
+                }
+                
+                %>  <%
+            }
+            catch (Exception e) {
+                if (conn != null) conn.close();
+            } 
+        
+    
+ %> 
+ 
     <script>
 
     var chunkSize = 1048576;
