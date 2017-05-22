@@ -45,8 +45,17 @@ function decryptChunk(uid, name, bytes, offset, data, aeskey, size) {
     } else {
         //var speed = humanBytes(size * 1000 / (new Date() - before)) + "/sec";
         //document.getElementById(uid + '_prog').innerHTML = "saving file, " + speed;
-        saveFile(name, data);
+        if (videoEl !== 'undefined' && videoEl !== null) {
+            playFile(videoEl, data);                   
+        } else {
+            saveFile(name, data);
+        }
     }
+}
+
+function playFile(videoEl, data) {
+    var blob = new Blob(data, {type : 'video/mp4'});
+    videoEl.src = window.URL.createObjectURL(blob); 
 }
 function saveFile(name, data) {
 
